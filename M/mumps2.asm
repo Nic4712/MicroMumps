@@ -20875,17 +20875,17 @@ bbcdMonth:	db 0
 binMonth:	db 0
 binYear:	db 0
 sGreet:		db 'Z80 Mumps - Version 4.06',0Dh,0Ah
-			db 'rebuilt in Feb/2014 by Marcelo Dantas',0Dh,0Ah
-			db 'marcelo.f.dantas@gmail.com'
+		db 'rebuilt in Feb/2014 by Marcelo Dantas',0Dh,0Ah
+		db 'marcelo.f.dantas@gmail.com'
 ifdef BINMODE
-			db 0Dh,0Ah
-			db '(binary file mode)',0Dh,0Ah 
-			db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-			db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-			db 0, 0, 0, 0, 0, 0, 0
+		db 0Dh,0Ah
+		db '(binary file mode)',0Dh,0Ah 
+		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		db 0, 0, 0, 0, 0, 0, 0
 else
-			db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-			db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-			db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-			db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 endif
