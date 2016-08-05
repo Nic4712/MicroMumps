@@ -1,0 +1,32 @@
+bdump	; Dumps globals.dat blocks
+	; by Marcelo Dantas
+	s bsize=768
+	s ssize=128
+	s f=4
+	s dr=$zg
+	w !,"Dumps from ",dr,":GLOBALS.DAT"
+	o f:(dr:"GLOBALS.DAT":8)
+	;
+rb	r !,"Block : ",b
+	q:b=""
+	w !,"      0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F"
+	s pos=b*bsize/ssize
+sk	u f:pos u 0
+	s count=0
+l0	w !,$j(count,4),":"
+	s asc=""
+l1	u f r *c u 0
+	i c>31,c<127 s asc=asc_$c(c)
+	e  s asc=asc_"."
+	d hex w c," "
+	s count=count+1
+	i count=bsize w " ",asc g rb
+	g:count#16 l1
+	w " ",asc
+	g l0
+hex	s h="0123456789abcdef"
+	s c1=c\16+1,c2=c#16+1
+	s c1=$e(h,c1,c1),c2=$e(h,c2,c2)
+	s c=c1_c2
+	q
+z	zs zdump zp zdump q
