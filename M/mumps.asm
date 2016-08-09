@@ -1,5 +1,5 @@
 ; ===========================================================================
-; UC Davis MocroMumps for CP/M - version 4.06
+; UC Davis MicroMumps for CP/M - version 4.06
 ; Rebuilt by Marcelo F. Dantas in February of 2014
 ; marcelo.f.dantas@gmail.com
 ; ===========================================================================

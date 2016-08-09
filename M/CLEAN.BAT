@@ -1,3 +1,4 @@
+@echo off
 del MUMPS.COM
 del MUMPSB.COM
 del SETMUMPS.COM
