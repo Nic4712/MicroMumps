@@ -4,8 +4,8 @@
 ; marcelo.f.dantas@gmail.com
 ; ===========================================================================
 ;
-			org 100h
-			jp	Init
+		org 100h
+		jp	Init
 ; ---------------------------------------------------------------------------
 BOOT:		equ 0000h
 BDOS:		equ 0005h
@@ -225,8 +225,8 @@ bIsGlbOpen:	db 0
 		db 0
 		db 0
 STCnt:		db 0
-NameLen:	db 0
-StrLen:		db 0
+NameLen:	db 0			; Length of the	current	variable name
+StrLen:		db 0			; Length of the	current	string (plus 1)
 tmpChar:	db 0
 		db 0
 Count:		db 0
@@ -344,7 +344,7 @@ glbptrUnk:	db 0, 0, 0
 byte_0545:	db 0
 byte_0546:	db 0
 byte_0547:	db 0
-FunctionFL:	db 0
+VariableFL:	db 0			; 0 - Function : 1 - Variable
 byte_0549:	db 0
 byte_054A:	db 0
 ; =============== S U B	R O U T	I N E =======================================
@@ -637,7 +637,7 @@ Main:
 		ld	(DoSW),	a
 		ld	(ForSW), a
 		ld	(bmFlag), a
-		ld	(FunctionFL), a
+		ld	(VariableFL), a	; 0 - Function : 1 - Variable
 		ld	a, 1
 		ld	(Mode),	a
 		xor	a
@@ -2069,10 +2069,10 @@ loc_12E2:
 CkFunction:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, 1
-		ld	(FunctionFL), a
+		ld	(VariableFL), a	; 0 - Function : 1 - Variable
 		call	Function	; Check	for function reference
 		xor	a
-		ld	(FunctionFL), a
+		ld	(VariableFL), a	; 0 - Function : 1 - Variable
 		ret
 ; End of function CkFunction
 ; =============== S U B	R O U T	I N E =======================================
@@ -3557,13 +3557,13 @@ locret_1CA6:
 ; Get Function/Special Variable	name
 GetFunSVName:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (FunctionFL)
+		ld	a, (VariableFL)	; 0 - Function : 1 - Variable
 		or	a
 		jp	z, GetFunSVName1
-		call	sub_850B
+		call	GetSVName
 		jp	GetFunSVName2
 GetFunSVName1:
-		call	sub_8525
+		call	GetFunName
 GetFunSVName2:
 		ret
 ; End of function GetFunSVName
@@ -3642,7 +3642,7 @@ evTest:
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $X variable
 evX:
-		ld	a, (FunctionFL)
+		ld	a, (VariableFL)	; 0 - Function : 1 - Variable
 		or	a
 		jp	z, evX1
 		ld	(SetBs), ix
@@ -3662,7 +3662,7 @@ evX1:
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $Y variable
 evY:
-		ld	a, (FunctionFL)
+		ld	a, (VariableFL)	; 0 - Function : 1 - Variable
 		or	a
 		jp	z, evY1
 		ld	(SetBs), ix
@@ -3717,7 +3717,7 @@ esvError:
 		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
-		ld	a, (FunctionFL)
+		ld	a, (VariableFL)	; 0 - Function : 1 - Variable
 		or	a
 		jp	nz, esvError1
 		ld	hl, byte_A04B
@@ -3977,7 +3977,7 @@ sub_1FD4:
 		cp	1		; Is it	'a' to 'z'?
 		jp	nz, loc_1FFA
 		ld	hl, (pStkPos)
-		ld	a, 11011111b
+		ld	a, 11011111b	; Uppercase mask
 		and	(hl)
 		ld	(hl), a
 		jp	loc_2002
@@ -4050,7 +4050,7 @@ loc_207E:				; Loads	to (Token) the token code of char (++pStkPos)
 		cp	1		; Is it	'a' to 'Z'?
 		jp	nz, loc_209B
 		ld	hl, (pStkPos)
-		ld	a, 11011111b
+		ld	a, 11011111b	; Uppercase mask
 		and	(hl)
 		ld	(hl), a
 		jp	loc_203A
@@ -4156,7 +4156,7 @@ loc_2167:				; Does nothing
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	(N), a
 		ld	(Ptr), ix
 		xor	a
@@ -4194,15 +4194,15 @@ loc_21BB:
 		or	a
 		jp	z, Error24	; Illegal use of indirection
 		jp	loc_217F
-loc_21C5:
+loc_21C5:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		cp	255
 		jp	z, Error11	; String too long
-		ld	hl, StrLen
+		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		inc	(hl)
 		ld	(ix+0),	0Dh
 		inc	ix
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	(ix+0),	a
 		inc	ix
 		ld	hl, (pStkStart)
@@ -4275,7 +4275,7 @@ NumLit:
 		ld	a, (bmFlag1)	; b2:Routine not saved
 		and	STRNG
 		jp	z, NumLit1
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	(I1), a
 NumLit1:
 		ld	a, TRUE
@@ -4730,20 +4730,20 @@ NameLit1:				; It is	a name
 		ld	a, 1
 		ld	(Result), a
 		xor	a
-		ld	(NameLen), a
+		ld	(NameLen), a	; Length of the	current	variable name
 		ld	(pName), ix
 NameLit2:
 		ld	a, (bmActFL)
 		or	a
 		jp	nz, NameLit3
-		ld	a, (NameLen)
+		ld	a, (NameLen)	; Length of the	current	variable name
 		cp	8
 		jp	z, NameLit3
 		ld	hl, (pStkPos)
 		ld	a, (hl)		; Push the character
 		ld	(ix+0),	a
 		inc	ix
-		ld	hl, NameLen
+		ld	hl, NameLen	; Length of the	current	variable name
 		inc	(hl)
 NameLit3:				; Get next token value
 		call	GToken
@@ -5166,12 +5166,12 @@ sub_29C5:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		call	sub_4F6E
 		ld	a, (Result)
 		cp	0
 		jp	z, loc_2A18
-		ld	hl, StrLen
+		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		inc	(hl)
 		ld	hl, (Ptr3)
 		ld	a, (IT)
@@ -5181,7 +5181,7 @@ loc_2A18:
 		ld	hl, (Ptr3)
 		inc	hl
 		ld	(Ptr3),	hl
-loc_2A1F:
+loc_2A1F:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		or	a
 		jp	nz, loc_2A2E
@@ -5196,7 +5196,7 @@ loc_2A2E:
 		ld	(Ptr), hl
 		inc	(hl)
 		ld	hl, (Ptr2)
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	(hl), a
 		inc	hl
 		ld	(Ptr2),	hl
@@ -5308,7 +5308,7 @@ sub_2B1D:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		cpl
 		ld	c, a
 		ld	b, 255
@@ -5489,7 +5489,7 @@ bfAscii1:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		or	a
 		jp	z, bfAscii3
 		ld	hl, N
@@ -5519,8 +5519,8 @@ bfAscii2:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
-bfAscii3:
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
+bfAscii3:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		cpl
 		ld	c, a
@@ -5556,7 +5556,7 @@ ShowVars:
 		inc	hl
 		ld	(VarPtr), hl	; Points to a var in the symbol	table
 		ld	a, (hl)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	(IT), a
 		ld	hl, IT
 		inc	(hl)
@@ -5599,11 +5599,11 @@ ShowVars4:				; Points to a var in the symbol	table
 		ld	hl, (VarPtr)
 		inc	hl
 		ld	(VarPtr), hl	; Points to a var in the symbol	table
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		call	sub_97B3
 		ld	(VarPtr), hl	; Points to a var in the symbol	table
 		ld	a, 14
-		ld	hl, StrLen
+		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		sub	(hl)
 		ld	(I1), a
 ShowVars5:
@@ -5676,7 +5676,7 @@ ShowVars8:
 		inc	hl
 		ld	(VarPtr), hl	; Points to a var in the symbol	table
 		ld	a, (hl)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	(IT), a
 		ld	hl, IT
 		inc	(hl)
@@ -5851,7 +5851,7 @@ bfExtract3:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		cpl
 		ld	c, a
 		ld	b, 255
@@ -5860,7 +5860,7 @@ bfExtract3:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	(Ptr), ix
 		ld	hl, ibcdUnk02
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		call	sub_9535
 		ld	hl, ibcdTemp0
 		ld	a, (hl)
@@ -6057,14 +6057,14 @@ bfLength:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		cpl
 		ld	c, a
 		ld	b, 255
 		inc	bc
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
-bfLength1:
+bfLength1:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		call	IntToStr	; Convert integer to string and	push it
 		ret
@@ -6092,7 +6092,7 @@ bfLength2:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	(Ptr1),	ix
 		xor	a
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	a, (I2)
 		or	a
 		jp	z, bfLength1
@@ -6106,7 +6106,7 @@ bfLength3:
 		call	sub_95A6
 		ld	(Ptr1),	hl
 		ld	(I3), a
-		ld	hl, StrLen
+		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		inc	(hl)
 		ld	a, (Result)
 		cp	0
@@ -6362,7 +6362,7 @@ sub_33D6:
 		ld	a, (SetFL)
 		cp	1
 		jp	z, loc_3412
-		ld	a, (FunctionFL)
+		ld	a, (VariableFL)	; 0 - Function : 1 - Variable
 		or	a
 		jp	nz, Error18	; Illegal character
 		ld	a, 1
@@ -6511,20 +6511,20 @@ loc_352E:
 		ld	(Ptr), hl
 		ld	(word_02F2), hl
 		ld	a, (hl)
-		ld	(NameLen), a
+		ld	(NameLen), a	; Length of the	current	variable name
 		xor	a
 		ld	(I1), a
-		ld	a, (NameLen)
+		ld	a, (NameLen)	; Length of the	current	variable name
 		and	10000000b
 		jp	z, loc_355F
 		ld	a, 1
 		ld	(I1), a
-		ld	hl, NameLen
+		ld	hl, NameLen	; Length of the	current	variable name
 		ld	a, 01111111b
 		and	(hl)
 		ld	(hl), a
 		ld	hl, (Ptr)
-		ld	a, (NameLen)
+		ld	a, (NameLen)	; Length of the	current	variable name
 		ld	(hl), a
 loc_355F:
 		ld	hl, (Ptr)
@@ -6568,7 +6568,7 @@ loc_35A9:
 		cp	1
 		jp	z, loc_3624
 		ld	a, (byte_A695)
-		ld	hl, NameLen
+		ld	hl, NameLen	; Length of the	current	variable name
 		add	a, (hl)
 		ld	(byte_A695), a
 		ld	hl, byte_A695
@@ -6641,20 +6641,20 @@ loc_3657:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	a, 1Eh
-		ld	hl, StrLen
+		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		cp	(hl)
 		jp	c, Error20	; Illegal expression
 		ld	hl, (word_A049)
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	(hl), a
 		inc	hl
 		ld	(word_A049), hl
 		call	sub_9782
 		ld	hl, 0
 		ld	(word_A049), hl
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	(byte_A6A3), a
 loc_3684:
 		xor	a
@@ -6809,7 +6809,7 @@ bfNxtOrd:
 		jp	z, Error46	; Subscript missing
 		ld	(I1), a
 		ld	hl, (word_02F2)
-		ld	a, (NameLen)
+		ld	a, (NameLen)	; Length of the	current	variable name
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
@@ -7125,7 +7125,7 @@ loc_3A2C:
 		inc	hl
 		ld	(word_02F2), hl
 		ld	a, (hl)
-		ld	(NameLen), a
+		ld	(NameLen), a	; Length of the	current	variable name
 		call	sub_6A99
 		ld	a, (Result)
 		cp	0
@@ -7451,7 +7451,7 @@ sub_3CD3:
 		cp	1
 		jp	z, Error51	; Reading from write only device
 		xor	a
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	a, (IODevice)
 		or	a
 		jp	z, loc_3CF3
@@ -7485,15 +7485,15 @@ loc_3D21:
 		ld	a, (tmpChar)
 		cp	0Dh
 		jp	z, loc_3D71
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		cp	255
 		jp	z, Error11	; String too long
-		ld	hl, StrLen
+		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		inc	(hl)
 		ld	a, (tmpChar)
 		ld	(ix+0),	a
 		inc	ix
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	hl, byte_0545
 		cp	(hl)
 		jp	z, loc_3D71
@@ -7504,16 +7504,16 @@ loc_3D21:
 		cp	5
 		jp	nz, loc_3D5D
 		jp	loc_3D21
-loc_3D5D:
+loc_3D5D:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		cp	1
 		jp	z, loc_3D71
-		ld	hl, StrLen
+		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		dec	(hl)
 		dec	ix
 		ld	a, (ix+0)
 		ld	(tmpChar), a
-loc_3D71:
+loc_3D71:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		ld	(ix+0),	a
 		inc	ix
@@ -7536,7 +7536,7 @@ loc_3D99:
 		or	00001000b
 		ld	(hl), a
 		ld	hl, ibcdTemp0
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		call	sub_9535
 		ld	hl, (pDevX)
 		ld	de, ibcdTemp0
@@ -7566,7 +7566,7 @@ ClrTRInfo:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		cpl
 		ld	c, a
 		ld	b, 255
@@ -7583,7 +7583,7 @@ ClrTRInfo1:				; Done
 		jp	z, ClrTRInfo2
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		cpl
 		ld	c, a
 		ld	b, 255
@@ -7976,7 +7976,7 @@ loc_4119:
 		ld	a, (ix+0)
 		ld	(byte_04DA), a
 		ld	hl, byte_04DA
-		ld	a, 11011111b
+		ld	a, 11011111b	; Uppercase mask
 		and	(hl)
 		ld	(hl), a
 		ld	a, (byte_04DA)
@@ -8798,7 +8798,7 @@ Timeout:
 		ld	hl, HangTime
 		call	StrToInt	; Converts string on ToS to integer
 		xor	a
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	a, (Locks)
 		cp	1
 		jp	z, Timeout2
@@ -9006,7 +9006,7 @@ bcXecute:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	(Ptr), ix
 		ld	hl, (Ptr)
 		cpl
@@ -9017,14 +9017,14 @@ bcXecute:
 		ld	(Ptr), hl
 		ld	hl, IndSW
 		inc	(hl)
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		cp	255
 		jp	z, Error11	; String too long
-		ld	hl, StrLen
+		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		inc	(hl)
 		ld	(ix+0),	0Dh	; Adds a CR to the end of the command
 		inc	ix
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	(ix+0),	a
 		inc	ix
 		call	sub_55A0
@@ -9148,7 +9148,7 @@ AC109:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	(Ptr), ix
 		ld	hl, (Ptr)
 		cpl
@@ -9157,14 +9157,14 @@ AC109:
 		inc	bc
 		add	hl, bc
 		ld	(Ptr), hl
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		cp	255
 		jp	z, Error11	; String too long
-		ld	hl, StrLen
+		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		inc	(hl)
 		ld	(ix+0),	0Dh
 		inc	ix
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	(ix+0),	a
 		inc	ix
 		ld	hl, (pStkStart)
@@ -9364,7 +9364,7 @@ loc_4CD4:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		or	a
 		jp	z, loc_4D22
 		cp	1
@@ -9373,7 +9373,7 @@ loc_4CD4:
 		ld	a, (ix+0)
 		ld	(tmpChar), a
 		ld	hl, tmpChar
-		ld	a, 11011111b
+		ld	a, 11011111b	; Uppercase mask
 		and	(hl)
 		ld	(hl), a
 		ld	a, (tmpChar)
@@ -9384,7 +9384,7 @@ loc_4CD4:
 		jp	nz, loc_4D19
 		ld	a, (tmpChar)
 		ld	(RoutinesDR), a
-		call	Null2
+		call	Null2		; Does nothing
 		jp	loc_4D22
 loc_4D19:
 		call	sub_7367
@@ -9537,9 +9537,9 @@ bfcCheck:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	(Ptr), ix
-bfcCheck1:
+bfcCheck1:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		or	a
 		jp	z, bfcCheck2
@@ -9551,7 +9551,7 @@ bfcCheck1:
 		ld	hl, IT
 		xor	(hl)
 		ld	(hl), a
-		ld	hl, StrLen
+		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		dec	(hl)
 		jp	bfcCheck1
 bfcCheck2:
@@ -9628,12 +9628,12 @@ sub_4EAC:
 		ld	hl, (word_02F2)
 		inc	hl
 		ld	(word_02F2), hl
-		ld	a, (NameLen)
+		ld	a, (NameLen)	; Length of the	current	variable name
 		call	sub_97B3
 		ld	(word_02F2), hl
 		ld	(ix+0),	LeftP
 		inc	ix
-		ld	hl, NameLen
+		ld	hl, NameLen	; Length of the	current	variable name
 		inc	(hl)
 		inc	(hl)
 		inc	(hl)
@@ -9641,16 +9641,16 @@ sub_4EAC:
 		ld	(byte_A60F), a
 loc_4F21:
 		call	sub_5861
-		ld	a, (NameLen)
+		ld	a, (NameLen)	; Length of the	current	variable name
 		ld	hl, IT
 		add	a, (hl)
-		ld	(NameLen), a
+		ld	(NameLen), a	; Length of the	current	variable name
 		ld	a, (byte_04CC)
 		cp	1
 		jp	z, loc_4F47
 		ld	(ix+0),	Comma
 		inc	ix
-		ld	hl, NameLen
+		ld	hl, NameLen	; Length of the	current	variable name
 		inc	(hl)
 		ld	hl, byte_04CC
 		dec	(hl)
@@ -9660,7 +9660,7 @@ loc_4F47:
 		inc	ix
 		xor	a
 		ld	(byte_A60F), a
-loc_4F51:
+loc_4F51:				; Length of the	current	variable name
 		ld	a, (NameLen)
 		ld	(ix+0),	a
 		inc	ix
@@ -9671,7 +9671,7 @@ loc_4F60:
 		ld	ix, (word_02A4)
 		call	SSChk		; Check	for room on the	syntax stack
 		xor	a
-		ld	(NameLen), a
+		ld	(NameLen), a	; Length of the	current	variable name
 		jp	loc_4F51
 ; End of function sub_4EAC
 ; =============== S U B	R O U T	I N E =======================================
@@ -9684,7 +9684,7 @@ sub_4F6E:
 		ld	hl, (Ptr3)
 		ld	(pStkPos), hl
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	(I1), a
 		ld	a, 0Fh
 		ld	(IT), a
@@ -9709,7 +9709,7 @@ loc_4FA9:
 		ld	(Ptr3),	hl
 		ld	hl, I1
 		dec	(hl)
-		ld	hl, StrLen
+		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		dec	(hl)
 		ld	a, (I1)
 		or	a
@@ -9806,7 +9806,7 @@ loc_5084:
 		ld	hl, (Ptr3)
 		inc	hl
 		ld	(pStkPos), hl
-		ld	a, (StrLen)
+		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	hl, I1
 		sub	(hl)
 		ld	(I2), a
@@ -9821,7 +9821,7 @@ loc_509D:				; 'i'
 		ld	a, (I2)
 		or	a
 		jp	nz, loc_509D
-		ld	hl, StrLen
+		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		inc	(hl)
 		ld	hl, (Ptr3)
 		dec	hl
@@ -9852,7 +9852,7 @@ sub_50CC:
 		inc	hl
 		ld	(word_02F2), hl
 		ld	a, (hl)
-		ld	(NameLen), a
+		ld	(NameLen), a	; Length of the	current	variable name
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
@@ -9939,13 +9939,12 @@ loc_5175:
 		ld	(tmpChar), a
 		cp	1Ah
 ifdef BINMODE
-		; Binary file mode
+		; Binary file support
 		nop
 		nop
 		nop
-		;
 else
-		; Regular file mode
+		; Regular file support
 		jp	z, locret_5197
 endif
 		inc	hl
@@ -10884,7 +10883,7 @@ MkStr:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	(word_02B0), ix
 		ld	hl, (word_02B0)
 		cpl
@@ -10902,7 +10901,7 @@ MkStr:
 		ld	hl, (word_02B0)
 		dec	hl
 		ld	(pStkPos), hl
-loc_5969:
+loc_5969:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		or	a
 		jp	z, loc_5A01
@@ -10919,7 +10918,7 @@ loc_5969:
 		ld	a, (I4)
 		xor	00000001b
 		ld	(I4), a
-loc_5992:
+loc_5992:				; Length of the	current	string (plus 1)
 		ld	hl, StrLen
 		dec	(hl)
 		jp	loc_5969
@@ -10934,7 +10933,7 @@ loc_5999:				; b2:Routine not saved
 		jp	z, loc_59B1
 		call	NumLit		; Check	for numeric literal
 		jp	loc_59BA
-loc_59B1:
+loc_59B1:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		ld	(I1), a
 		call	IntLit		; Check	for integer literal
@@ -10998,7 +10997,7 @@ sub_5A30:
 		ld	a, (CmdLineSz)
 		ld	(IT), a
 		xor	a
-		ld	(NameLen), a
+		ld	(NameLen), a	; Length of the	current	variable name
 		ld	hl, (word_02B0)
 		ld	(pIndex), hl
 loc_5A45:
@@ -11008,7 +11007,7 @@ loc_5A45:
 		jp	z, locret_5A66
 		inc	hl
 		ld	(pIndex), hl
-		ld	hl, NameLen
+		ld	hl, NameLen	; Length of the	current	variable name
 		inc	(hl)
 		ld	hl, IT
 		dec	(hl)
@@ -11630,18 +11629,18 @@ loc_5F6E:
 		jp	c, loc_5F81
 		ld	hl, IT
 		sub	(hl)
-		ld	(NameLen), a
+		ld	(NameLen), a	; Length of the	current	variable name
 		jp	loc_5F86
 loc_5F81:
 		ld	a, 5
-		ld	(NameLen), a
+		ld	(NameLen), a	; Length of the	current	variable name
 loc_5F86:
 		ld	a, Space
 		ld	(tmpChar), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
-		ld	hl, NameLen
+		ld	hl, NameLen	; Length of the	current	variable name
 		dec	(hl)
-		ld	a, (NameLen)
+		ld	a, (NameLen)	; Length of the	current	variable name
 		or	a
 		jp	nz, loc_5F86
 loc_5F99:
@@ -12595,7 +12594,7 @@ IndRet4:
 IndRet5:
 		dec	ix
 		ld	a, (ix+0)
-		ld	(StrLen), a
+		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		cpl
 		ld	c, a
 		ld	b, 255
@@ -12628,21 +12627,21 @@ loc_67C5:
 		inc	ix
 		call	Write
 		xor	a
-		ld	(NameLen), a
+		ld	(NameLen), a	; Length of the	current	variable name
 		ld	a, 1
 		ld	(byte_A60F), a
 loc_67EE:
 		call	sub_5861
-		ld	a, (NameLen)
+		ld	a, (NameLen)	; Length of the	current	variable name
 		ld	hl, IT
 		add	a, (hl)
-		ld	(NameLen), a
+		ld	(NameLen), a	; Length of the	current	variable name
 		ld	a, (byte_04CC)
 		cp	1
 		jp	z, loc_6814
 		ld	(ix+0),	Comma
 		inc	ix
-		ld	hl, NameLen
+		ld	hl, NameLen	; Length of the	current	variable name
 		inc	(hl)
 		ld	hl, byte_04CC
 		dec	(hl)
@@ -12650,7 +12649,7 @@ loc_67EE:
 loc_6814:
 		xor	a
 		ld	(byte_A60F), a
-		ld	a, (NameLen)
+		ld	a, (NameLen)	; Length of the	current	variable name
 		ld	(ix+0),	a
 		inc	ix
 		ld	(ix+0),	3
@@ -13623,7 +13622,7 @@ locret_70A7:
 ; =============== S U B	R O U T	I N E =======================================
 sub_70A8:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (NameLen)
+		ld	a, (NameLen)	; Length of the	current	variable name
 		or	a
 		jp	nz, loc_70FA
 		ld	a, (byte_04D0)
@@ -13649,7 +13648,7 @@ sub_70A8:
 		ld	hl, byte_9FD3
 		ld	(word_02F2), hl
 		ld	a, (hl)
-		ld	(NameLen), a
+		ld	(NameLen), a	; Length of the	current	variable name
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
@@ -15480,7 +15479,7 @@ locret_80D2:
 ; =============== S U B	R O U T	I N E =======================================
 sub_80D3:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (NameLen)
+		ld	a, (NameLen)	; Length of the	current	variable name
 		ld	(Count), a
 		ld	hl, Count
 		inc	(hl)
@@ -15948,59 +15947,59 @@ loc_84F0:
 ; =============== S U B	R O U T	I N E =======================================
 sub_8506:
 		ld	de, Commands
-		jr	loc_8555
+		jr	GetFunName5
 ; End of function sub_8506
 ; =============== S U B	R O U T	I N E =======================================
-sub_850B:
+GetSVName:
 		call	sub_85AF
 		ld	hl, (pStkPos)
 		ld	a, (hl)
-		and	11011111b
+		and	11011111b	; Make uppercase
 		cp	5Ah		; 'Z'
-		jr	nz, loc_851A
+		jr	nz, GetSVName1
 		dec	b
 		inc	hl
-loc_851A:
+GetSVName1:
 		ld	de, ssvPiece
 		call	sub_85E9
-		jr	nc, loc_8576
+		jr	nc, GetFunName6
 		jp	Error05		; Illegal command name
-; End of function sub_850B
+; End of function GetSVName
 ; =============== S U B	R O U T	I N E =======================================
-sub_8525:
+GetFunName:
 		call	sub_85AF
 		push	af
 		ld	hl, (pStkPos)
 		ld	a, (hl)
-		and	11011111b
+		and	11011111b	; Make uppercase
 		cp	5Ah		; 'Z'
-		jr	z, loc_8540
+		jr	z, GetFunName2
 		pop	af
-		jr	c, loc_853B
-		ld	de, svHorolog
-		jr	loc_854D
-loc_853B:
+		jr	c, GetFunName1
+		ld	de, svHorolog	; Start	of the special varibles	table
+		jr	GetFunName4
+GetFunName1:
 		ld	de, Functions
-		jr	loc_8555
-loc_8540:
+		jr	GetFunName5
+GetFunName2:
 		dec	b
 		inc	hl
 		pop	af
-		jr	c, loc_854A
+		jr	c, GetFunName3
 		ld	de, svzCount
-		jr	loc_854D
-loc_854A:
+		jr	GetFunName4
+GetFunName3:
 		ld	de, sfzCheck
-loc_854D:
+GetFunName4:
 		call	sub_85E9
-		jr	nc, loc_8576
+		jr	nc, GetFunName6
 		jp	Error05		; Illegal command name
-loc_8555:
+GetFunName5:
 		ld	hl, (pStkPos)
 		ld	a, (hl)
-		and	11011111b
+		and	11011111b	; Make uppercase
 		cp	5Ah		; 'Z'
-		jr	z, loc_859F
+		jr	z, GetFunName9
 		sub	41h		; 'A'
 		jp	c, Error05	; Illegal command name
 		cp	19h
@@ -16014,13 +16013,13 @@ loc_8555:
 		inc	de
 		ld	a, (de)
 		cp	41h		; 'A'
-		jr	nc, loc_858D
-loc_8576:
+		jr	nc, GetFunName8
+GetFunName6:
 		ld	a, (de)
 		cp	LeftP
-		jr	z, loc_857C
+		jr	z, GetFunName7
 		dec	de
-loc_857C:
+GetFunName7:
 		ex	de, hl
 		ld	(pStkPos), hl
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
@@ -16032,7 +16031,7 @@ loc_857C:
 		xor	a
 		ld	(Locks), a
 		jp	(hl)
-loc_858D:
+GetFunName8:
 		inc	hl
 		inc	hl
 		ld	a, (hl)
@@ -16042,17 +16041,17 @@ loc_858D:
 		or	h
 		jp	z, Error05	; Illegal command name
 		call	sub_85CB
-		jr	nc, loc_8576
+		jr	nc, GetFunName6
 		jp	Error05		; Illegal command name
-loc_859F:
+GetFunName9:
 		call	sub_85AF
 		dec	b
 		inc	hl
 		ld	de, sczSave
 		call	sub_85E9
-		jr	nc, loc_8576
+		jr	nc, GetFunName6
 		jp	Error05		; Illegal command name
-; End of function sub_8525
+; End of function GetFunName
 ; =============== S U B	R O U T	I N E =======================================
 sub_85AF:
 		push	hl
@@ -16060,9 +16059,9 @@ sub_85AF:
 		ld	b, 0
 loc_85B5:
 		ld	a, (hl)
-		cp	LeftP
+		cp	LeftP		; Left Parentheses
 		jr	z, loc_85C8
-		and	11011111b
+		and	11011111b	; Make uppercase
 		cp	41h		; 'A'
 		jr	c, loc_85C8
 		cp	LeftB		; Left bracket
@@ -16086,7 +16085,7 @@ loc_85CE:
 		inc	hl
 loc_85D1:
 		ld	a, (de)
-		and	11011111b
+		and	11011111b	; Make uppercase
 		cp	(hl)
 		jr	nz, loc_85DF
 		inc	de
@@ -16124,7 +16123,7 @@ loc_85F4:
 		ld	c, a
 		inc	hl
 		ld	a, (de)
-		and	11011111b
+		and	11011111b	; Make uppercase
 		cp	(hl)
 		add	hl, bc
 		jr	z, loc_8605
@@ -20052,7 +20051,7 @@ loc_9C5D:
 ; Find first file
 FFirst:
 		call	SSChk		; Check	for room on the	syntax stack
-		call	PrepFCB		; Prepares FCB
+		call	PrepFCB		; Prepares the FCB
 		ld	c, 26		; Set DMA address
 		ld	de, Page0BUF
 		call	BDOScall	; Make a call to the CP/M BDOS
@@ -20174,8 +20173,9 @@ FSeqWrite2:
 		jp	FSeqWrite2
 ; End of function FSeqWrite
 ; =============== S U B	R O U T	I N E =======================================
+; Does nothing
 Null3:
-		ret			; (todo) Check this
+		ret			; There's no reference to here
 ; End of function Null3
 ; =============== S U B	R O U T	I N E =======================================
 ; Close	globals	file
@@ -20199,7 +20199,7 @@ FClose:					; Close	file
 ; Open globals file
 GFOpen:
 		call	SSChk		; Check	for room on the	syntax stack
-		call	PrepFCB		; Prepares FCB
+		call	PrepFCB		; Prepares the FCB
 FOpen:					; Open file
 		ld	hl, (pFCBAddr)
 		ld	a, (Drive)
@@ -20284,7 +20284,7 @@ FDelete:
 		ret
 ; End of function FDelete
 ; =============== S U B	R O U T	I N E =======================================
-; Prepares FCB
+; Prepares the FCB
 PrepFCB:
 		ld	a, (FCBType)	; 0:Global, 1:Routine, 2:File
 		or	a
@@ -20351,7 +20351,7 @@ PrepFCB6:
 		jr	c, PrepFCB7
 		cp	7Bh		; '{'
 		jr	nc, PrepFCB7
-		and	11011111b
+		and	11011111b	; Make uppercase
 PrepFCB7:
 		cp	Point
 		jp	z, PrepFCB8
@@ -20394,10 +20394,12 @@ PrepFCBE:				; 0:Global, 1:Routine, 2:File
 		ret
 ; End of function PrepFCB
 ; =============== S U B	R O U T	I N E =======================================
+; Does nothing
 Null4:
-		ret			; (todo) Check this
+		ret			; There's no reference to here
 ; End of function Null4
 ; =============== S U B	R O U T	I N E =======================================
+; Does nothing
 Null2:
 		ret
 ; End of function Null2
@@ -20883,14 +20885,14 @@ sGreet:		db 'Z80 Mumps - Version 4.06',0Dh,0Ah
 		db 'rebuilt in Feb/2014 by Marcelo Dantas',0Dh,0Ah
 		db 'marcelo.f.dantas@gmail.com'
 ifdef BINMODE
-		db 0Dh,0Ah
-		db '(binary file mode)',0Dh,0Ah 
-		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-		db 0, 0, 0, 0, 0, 0, 0
+		; Binary file support
+		db 0Dh,	0Ah
+		db '(binary file mode)', 0Dh, 0Ah
+		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0
 else
-		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-		db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		; Regular file support
+		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 endif
+		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0
