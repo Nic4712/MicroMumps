@@ -44,15 +44,14 @@ LeftB:		equ '['
 tknTAB:		equ 25h
 tknCRLF:	equ 26h
 ; ---------------------------------------------------------------------------
-		dw byte_A581
-		dw InPort6		; Check	reader device availability
+		db 0,0,0,0
 GlobalsDR:	db 0
 RoutinesDR:	db 0
-ClrScrSize:	db 6
-ClrScr:		db 1Bh, 5Bh, 'H', 1Bh, 5Bh, 'J', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+ClrScrSize:	db 6			; Clear	screen for ANSI/VT100
+ClrScr:		db 1Bh,	5Bh, 48h, 1Bh, 5Bh, 4Ah, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0
 		db 0, 0, 0
-		dw 0AAC1h
-PartSize:	dw 2000h
+		dw 0
+PartSize:	dw 2000h		; Default partition size
 ErrorsDR:	db 0
 ErrorsFCB:	db 0
 		db 'ERRORS  DAT'
@@ -345,7 +344,7 @@ glbptrUnk:	db 0, 0, 0
 byte_0545:	db 0
 byte_0546:	db 0
 byte_0547:	db 0
-byte_0548:	db 0
+FunctionFL:	db 0
 byte_0549:	db 0
 byte_054A:	db 0
 ; =============== S U B	R O U T	I N E =======================================
@@ -422,7 +421,7 @@ Start:
 		ld	(hl), 43
 		inc	hl
 		ld	(Ptr), hl
-		ld	hl, (PartSize)	; HL <-	Partition Size
+		ld	hl, (PartSize)	; Default partition size
 		ld	de, 23
 		add	hl, de
 		ld	(pIndex), hl
@@ -468,7 +467,7 @@ Start:
 		ld	(pCurRtnLine), hl
 		ld	(pEndOfRtn), hl
 		ld	(hl), 26
-		ld	de, (PartSize)
+		ld	de, (PartSize)	; Default partition size
 		add	hl, de
 		ld	(Ptr), hl
 		ld	(pSymbolTbl), hl
@@ -630,15 +629,15 @@ Main:
 		xor	a
 		ld	(Result), a
 		ld	(Case),	a
-		ld	(bmActFlag), a
+		ld	(bmActFL), a
 		ld	(Token), a
 		ld	(SetFL), a
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		ld	(IndSW), a
 		ld	(DoSW),	a
 		ld	(ForSW), a
 		ld	(bmFlag), a
-		ld	(byte_0548), a
+		ld	(FunctionFL), a
 		ld	a, 1
 		ld	(Mode),	a
 		xor	a
@@ -698,18 +697,18 @@ MainLoop3:
 		ld	(Mode),	a
 		jp	MainLoop
 MainLoop4:
-		ld	hl, bmActFlag
+		ld	hl, bmActFL
 		ld	a, 11111101b
 		and	(hl)
 		ld	(hl), a
 		xor	a
 		ld	(ForSW), a
-		ld	hl, bmActFlag
+		ld	hl, bmActFL
 		ld	a, 11111110b
 		and	(hl)
 		ld	(hl), a
 		xor	a
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 MainLoop5:				; Execute command
 		ld	a, (Token)
 		cp	tknCRLF		; Is it	CR or LF?
@@ -724,7 +723,7 @@ MainLoop6:
 		ld	a, 1
 		ld	(byte_A69C), a
 MainLoop7:
-		ld	hl, bmActFlag
+		ld	hl, bmActFL
 		ld	a, 11111110b
 		and	(hl)
 		ld	(hl), a
@@ -739,7 +738,7 @@ MainLoop7:
 		jp	z, MainLoop8
 		call	sub_55D2
 MainLoop8:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		and	00000010b
 		jp	nz, MainLoop9
 		ld	a, (bmFlag)
@@ -748,7 +747,7 @@ MainLoop8:
 MainLoop9:				; GetChar if A!=0x00 (BIOS call)
 		call	BGetChar2
 		xor	a		; Reset	LinAct and ComAct
-		ld	(bmActFlag), a
+		ld	(bmActFL), a
 		ld	a, (ForSW)
 		or	a
 		jp	z, MainLoop
@@ -963,7 +962,7 @@ ecBreak1:				; String-Value expression
 		ld	a, 1
 		ld	(Case),	a
 ecBreak2:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bcBreak	; Body of BREAK	command
 ecBreak3:				; Command argument ending
@@ -988,7 +987,7 @@ ecClose:
 		jp	nz, Error14	; Illegal command terminator
 ecClose1:				; Expression
 		call	Expr
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, DevNtoShort	; Converts device # to short
 		ld	a, (Token)
@@ -997,7 +996,7 @@ ecClose1:				; Expression
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 		call	DevParam	; Device parameters
 ecClose2:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bcClose	; Body of CLOSE	command
 ecClose3:				; Command argument ending
@@ -1025,7 +1024,7 @@ ecDo1:					; Check	for DO-able branch point
 		ld	a, (Case)
 		or	a
 		jp	z, ecDo2
-		ld	a, (bmActFlag)	; Stack	DO information;	do transpt
+		ld	a, (bmActFL)	; Stack	DO information;	do transpt
 		or	a
 		call	z, bcDo		; Body of DO command
 ecDo2:					; Command argument ending
@@ -1048,7 +1047,7 @@ ecElse:
 		jp	z, ecElse1
 		cp	3
 		jp	nz, Error14	; Illegal command terminator
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bcElse	; Body of ELSE command
 ecElse1:
@@ -1070,93 +1069,93 @@ ecFor:
 		or	a
 		jp	z, Error23	; Illegal variable name
 		ld	(Vptr),	ix
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_494A
 		ld	a, (Token)
 		cp	11h		; Is it	'='?
 		jp	nz, Error27	; Missing equal	sign
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-loc_0B4D:				; Expression
+ecFor1:					; Expression
 		call	Expr
 		ld	a, (Token)
 		cp	16h		; Is it	':'?
-		jp	z, loc_0B69
-		ld	a, (bmActFlag)
+		jp	z, ecFor2
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_38CF
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_430C
-		jp	loc_0BF1
-loc_0B69:				; Loads	to (Token) the token code of char (++pStkPos)
+		jp	ecFor6
+ecFor2:					; Loads	to (Token) the token code of char (++pStkPos)
 		call	GToken
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_41F6
 		ld	(word_02FE), ix
 		call	NumExp		; Numeric-Value	expression
 		ld	a, (Token)
 		cp	16h		; Is it	':'?
-		jp	z, loc_0BAC
+		jp	z, ecFor4
 		ld	a, 1
 		ld	(byte_04F3), a
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4DB3
-loc_0B8E:
-		ld	a, (bmActFlag)
+ecFor3:
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_430C
 		ld	a, 4
 		ld	(Case),	a
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4380
 		ld	a, (Case)
 		cp	4
-		jp	z, loc_0BF1
-		jp	loc_0B8E
-loc_0BAC:				; Loads	to (Token) the token code of char (++pStkPos)
+		jp	z, ecFor6
+		jp	ecFor3
+ecFor4:					; Loads	to (Token) the token code of char (++pStkPos)
 		call	GToken
 		ld	(word_02F8), ix
 		call	NumExp		; Numeric-Value	expression
 		ld	a, 2
 		ld	(byte_04F3), a
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4DB3
 		ld	a, 4
 		ld	(Case),	a
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_463E
 		ld	a, (Case)
 		cp	1
-		jp	nz, loc_0BF1
-loc_0BD6:
-		ld	a, (bmActFlag)
+		jp	nz, ecFor6
+ecFor5:
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_430C
 		ld	a, 4
 		ld	(Case),	a
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_46E2
 		ld	a, (Case)
 		cp	1
-		jp	z, loc_0BD6
-loc_0BF1:
-		ld	a, (bmActFlag)
+		jp	z, ecFor5
+ecFor6:
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_47DD
 		ld	a, (Token)
 		cp	15h		; Is it	','?
-		jp	nz, loc_0C06
+		jp	nz, ecFor7
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		jp	loc_0B4D
-loc_0C06:
-		ld	a, (bmActFlag)
+		jp	ecFor1
+ecFor7:
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4839
 		call	ComArgEnd3
@@ -1172,22 +1171,22 @@ ecGoto:
 		call	PostCond	; Command postconditional and delimiter
 		ld	a, (Case)
 		cp	4
-		jp	z, loc_0C39
+		jp	z, ecGoto2
 		cp	1
 		jp	nz, Error14	; Illegal command terminator
-loc_0C28:				; Transfer point primitive
+ecGoto1:				; Transfer point primitive
 		call	Trans
 		ld	a, (Case)
 		or	a
-		jp	z, loc_0C39
-		ld	a, (bmActFlag)
+		jp	z, ecGoto2
+		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3E37
-loc_0C39:				; Command argument ending
+		call	z, bcGoto	; Body of GOTO command
+ecGoto2:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
 		cp	1
-		jp	nz, loc_0C28
+		jp	nz, ecGoto1
 		ld	hl, bmFlag
 		ld	a, (hl)
 		or	00000001b
@@ -1204,7 +1203,7 @@ ecHalt:
 		cp	3
 		jp	nz, Error14	; Illegal command terminator
 ecHalt1:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3977
 		ld	hl, bmFlag
@@ -1225,7 +1224,7 @@ ecHang1:
 		jp	nz, Error14	; Illegal command terminator
 ecHang2:				; Integer-Value	expression
 		call	IntExp
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bcHang	; Body of HANG command
 ecHang3:				; Command argument ending
@@ -1250,19 +1249,19 @@ ecIf:
 		jp	z, ecIf2
 		cp	1
 		jp	z, ecIf1
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bcIf		; Body of IF command
 		jp	ecIf3
 ecIf1:					; Truth-Value expression
 		call	TVExp
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, CaseToIfSW	; Move the contents of (case) to (ifsw)
 		ld	a, (Case)
 		cp	1
 		jp	z, ecIf2
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, SetAFb1	; Sets bit 1 of	bmActFlag
 ecIf2:					; Command argument ending
@@ -1283,59 +1282,59 @@ ecKill:
 		call	PostCond	; Command postconditional and delimiter
 		ld	a, (Case)
 		cp	4
-		jp	z, loc_0D56
+		jp	z, ecKill6
 		cp	1
-		jp	z, loc_0CFD
-		ld	a, (bmActFlag)
+		jp	z, ecKill1
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_39ED
-		jp	loc_0D61
-loc_0CFD:
+		jp	ecKill7
+ecKill1:
 		ld	a, (Token)
 		cp	19h		; Is it	'('?
-		jp	nz, loc_0D4C
+		jp	nz, ecKill5
 		xor	a
 		ld	(KillFL), a
-loc_0D09:				; Loads	to (Token) the token code of char (++pStkPos)
+ecKill2:				; Loads	to (Token) the token code of char (++pStkPos)
 		call	GToken
 		call	LVarName	; Check	for local variable name
 		ld	a, (Result)
 		cp	1
-		jp	z, loc_0D21
-		ld	a, (bmActFlag)
+		jp	z, ecKill3
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3FBA
 		jp	Error23		; Illegal variable name
-loc_0D21:
-		ld	a, (bmActFlag)
+ecKill3:
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3A04
 		ld	a, (Token)
 		cp	15h		; Is it	','?
-		jp	z, loc_0D09
+		jp	z, ecKill2
 		cp	1Ah		; Is it	')'?
-		jp	z, loc_0D3F
-		ld	a, (bmActFlag)
+		jp	z, ecKill4
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3FBA
 		jp	Error12		; Unmatched parentheses
-loc_0D3F:				; Loads	to (Token) the token code of char (++pStkPos)
+ecKill4:				; Loads	to (Token) the token code of char (++pStkPos)
 		call	GToken
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3A88
-		jp	loc_0D56
-loc_0D4C:				; Global/Local variable	name
+		jp	ecKill6
+ecKill5:				; Global/Local variable	name
 		call	GLVarName
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3AEA
-loc_0D56:				; Command argument ending
+ecKill6:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
 		cp	1
-		jp	nz, loc_0CFD
-loc_0D61:
+		jp	nz, ecKill1
+ecKill7:
 		ld	hl, bmFlag
 		ld	a, (hl)
 		or	00000001b
@@ -1350,25 +1349,25 @@ ecLock:
 		ld	(Locks), a
 		ld	a, (Case)
 		cp	4
-		jp	z, loc_0D95
+		jp	z, ecLock2
 		cp	1
-		jp	z, loc_0D88
-		ld	a, (bmActFlag)
+		jp	z, ecLock1
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_49F2
-		jp	loc_0DA0
-loc_0D88:
+		jp	ecLock3
+ecLock1:
 		call	sub_126B
-		call	sub_15DE
-		ld	a, (bmActFlag)
+		call	DoTimeout	; Does a timeout after a command
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_49E3
-loc_0D95:				; Command argument ending
+ecLock2:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
 		cp	1
-		jp	nz, loc_0D88
-loc_0DA0:
+		jp	nz, ecLock1
+ecLock3:
 		xor	a
 		ld	(Locks), a
 		ld	hl, bmFlag
@@ -1388,21 +1387,21 @@ ecOpen:
 		jp	nz, Error14	; Illegal command terminator
 ecOpen1:				; Expression
 		call	Expr
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, DevNtoShort	; Converts device # to short
 		ld	a, (Token)
 		cp	16h		; Is it	':'?
 		jp	nz, ecOpen2
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		call	sub_15DE
+		call	DoTimeout	; Does a timeout after a command
 		ld	a, (Result)
 		cp	1
 		jp	z, ecOpen2
 		call	DevParam	; Device parameters
-		call	sub_15DE
+		call	DoTimeout	; Does a timeout after a command
 ecOpen2:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bcOpen
 ecOpen3:				; Command argument ending
@@ -1426,7 +1425,7 @@ ecQuit:
 		cp	3
 		jp	nz, Error14	; Illegal command terminator
 ecQuit1:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bcQuit	; Body of QUIT command
 		ld	hl, bmFlag
@@ -1455,8 +1454,8 @@ ecRead2:
 		jp	nz, Error23	; Illegal variable name
 		xor	a
 		ld	(TimeoutFL), a
-		call	sub_15DE
-		ld	a, (bmActFlag)
+		call	DoTimeout	; Does a timeout after a command
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3C2E
 		jp	ecRead6
@@ -1469,7 +1468,7 @@ ecRead3:				; Checks if needed to output !,	# or ?x
 		ld	a, (Result)
 		cp	1
 		jp	nz, ecRead4
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3CCC
 		jp	ecRead6
@@ -1483,14 +1482,14 @@ ecRead4:				; Check	for local variable name
 		jp	nz, ecRead5
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 		call	IntExp		; Integer-Value	expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4E07
 ecRead5:
 		ld	a, 1
 		ld	(TimeoutFL), a
-		call	sub_15DE
-		ld	a, (bmActFlag)
+		call	DoTimeout	; Does a timeout after a command
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3CD3
 ecRead6:				; Command argument ending
@@ -1525,7 +1524,7 @@ ecSet2:
 		jp	nz, Error27	; Missing equal	sign
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 		call	Expr		; Expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_33D6
 ecSet3:					; Command argument ending
@@ -1550,7 +1549,7 @@ ecUse:
 		jp	nz, Error14	; Illegal command terminator
 ecUse2:					; Expression
 		call	Expr
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, DevNtoShort	; Converts device # to short
 		ld	a, (Token)
@@ -1559,7 +1558,7 @@ ecUse2:					; Expression
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 		call	DevParam	; Device parameters
 ecUse3:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3BAC
 ecUse4:					; Command argument ending
@@ -1585,13 +1584,13 @@ ecView:
 ecView1:
 		xor	a
 		ld	(ViewParam), a
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, ShowVars	; View a list of local vars
 		jp	ecView4
 ecView2:				; Integer-Value	expression
 		call	IntExp
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bcView	; Body of VIEW command
 ecView3:				; Command argument ending
@@ -1621,7 +1620,7 @@ ecWrite1:
 		jp	nz, ecWrite2
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 		call	IntExp		; Integer-Value	expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, WriteAst	; Writes *n
 		jp	ecWrite3
@@ -1631,7 +1630,7 @@ ecWrite2:				; Checks if needed to output !,	# or ?x
 		cp	1
 		jp	z, ecWrite3
 		call	Expr		; Expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, Write
 ecWrite3:				; Command argument ending
@@ -1660,12 +1659,12 @@ ecXecute1:				; String-Value expression
 		ld	a, (Case)
 		cp	1
 		jp	z, ecXecute2
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_2B1D
 		jp	ecXecute3
 ecXecute2:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bcXecute	; Body of XECUTE command
 ecXecute3:				; Command argument ending
@@ -1690,7 +1689,7 @@ eczDelete:
 		jp	nz, Error14	; Illegal command terminator
 eczDelete1:				; Routine name primitive
 		call	RoutineN
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bczDelete	; Body of ZDELETE command
 eczDelete2:				; Command argument ending
@@ -1714,11 +1713,11 @@ eczGo:
 		cp	1
 		jp	nz, eczGo1
 		call	IntExp		; Integer-Value	expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4D30
 eczGo1:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bczGo	; Body of ZGO command
 eczGo2:
@@ -1734,28 +1733,28 @@ eczInsert:
 		call	PostCond	; Command postconditional and delimiter
 		ld	a, (Case)
 		cp	4
-		jp	z, loc_108E
+		jp	z, eczInsert3
 		cp	1
 		jp	nz, Error14	; Illegal command terminator
-loc_106F:				; String-Value expression
+eczInsert1:				; String-Value expression
 		call	StrExp
 		ld	a, (Token)
 		cp	16h		; Is it	':'?
-		jp	nz, loc_1087
+		jp	nz, eczInsert2
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 		call	Liner
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4900
-loc_1087:
-		ld	a, (bmActFlag)
+eczInsert2:
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4C9E
-loc_108E:				; Command argument ending
+eczInsert3:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
 		cp	1
-		jp	nz, loc_106F
+		jp	nz, eczInsert1
 		ld	hl, bmFlag
 		ld	a, (hl)
 		or	00000001b
@@ -1768,19 +1767,19 @@ eczLoad:
 		call	PostCond	; Command postconditional and delimiter
 		ld	a, (Case)
 		cp	4
-		jp	z, loc_10BB
+		jp	z, eczLoad2
 		cp	1
 		jp	nz, Error14	; Illegal command terminator
-loc_10B1:				; Routine name primitive
+eczLoad1:				; Routine name primitive
 		call	RoutineN
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
-		call	z, sub_48E5
-loc_10BB:				; Command argument ending
+		call	z, bczLoad	; Body oz ZLOAD	command
+eczLoad2:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
 		cp	1
-		jp	nz, loc_10B1
+		jp	nz, eczLoad1
 		ld	hl, bmFlag
 		ld	a, (hl)
 		or	00000001b
@@ -1793,33 +1792,33 @@ eczMove:
 		call	PostCond	; Command postconditional and delimiter
 		ld	a, (Case)
 		cp	4
-		jp	z, loc_1107
+		jp	z, eczMove3
 		cp	1
-		jp	z, loc_10E8
-		ld	a, (bmActFlag)
+		jp	z, eczMove1
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_48F9
-		jp	loc_1112
-loc_10E8:
+		jp	eczMove4
+eczMove1:
 		ld	a, (Token)
 		cp	16h		; Is it	':'?
-		jp	nz, loc_10FD
+		jp	nz, eczMove2
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4BEC
-		jp	loc_1107
-loc_10FD:
+		jp	eczMove3
+eczMove2:
 		call	Liner
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4900
-loc_1107:				; Command argument ending
+eczMove3:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
 		cp	1
-		jp	nz, loc_10FD
-loc_1112:
+		jp	nz, eczMove2
+eczMove4:
 		ld	hl, bmFlag
 		ld	a, (hl)
 		or	00000001b
@@ -1832,27 +1831,27 @@ eczOption:
 		call	PostCond	; Command postconditional and delimiter
 		ld	a, (Case)
 		cp	4
-		jp	z, loc_1145
+		jp	z, eczOption2
 		cp	1
-		jp	z, loc_1134
-		ld	a, (bmActFlag)
+		jp	z, eczOption1
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_333B
-		jp	loc_1150
-loc_1134:
-		ld	a, (bmActFlag)
+		jp	eczOption3
+eczOption1:
+		ld	a, (bmActFL)
 		or	a
 		call	z, ZeroToS	; Zero Top of Stack
 		call	DevParam	; Device parameters
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4CC9
-loc_1145:				; Command argument ending
+eczOption2:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
 		cp	1
-		jp	nz, loc_1134
-loc_1150:
+		jp	nz, eczOption1
+eczOption3:
 		ld	hl, bmFlag
 		ld	a, (hl)
 		or	00000001b
@@ -1865,33 +1864,33 @@ ecPrint:
 		call	PostCond	; Command postconditional and delimiter
 		ld	a, (Case)
 		cp	4
-		jp	z, loc_1191
+		jp	z, ecPrint3
 		cp	1
-		jp	z, loc_1172
-		ld	a, (bmActFlag)
+		jp	z, ecPrint1
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4914
-		jp	loc_119C
-loc_1172:
+		jp	ecPrint4
+ecPrint1:
 		ld	a, (Token)
 		cp	7		; Is it	'*'?
-		jp	nz, loc_1187
+		jp	nz, ecPrint2
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4BF3
-		jp	loc_1191
-loc_1187:
+		jp	ecPrint3
+ecPrint2:
 		call	sub_12AF
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_492D
-loc_1191:				; Command argument ending
+ecPrint3:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
 		cp	1
-		jp	nz, loc_1172
-loc_119C:
+		jp	nz, ecPrint1
+ecPrint4:
 		ld	hl, bmFlag
 		ld	a, (hl)
 		or	00000001b
@@ -1907,7 +1906,7 @@ eczRemove:
 		jp	z, eczRemove3
 		cp	1
 		jp	z, eczRemove1
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_48A2
 		jp	eczRemove4
@@ -1916,13 +1915,13 @@ eczRemove1:
 		cp	7		; Is it	'*'?
 		jp	nz, eczRemove2
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4C0D
 		jp	eczRemove3
 eczRemove2:
 		call	sub_12AF
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_48D2
 eczRemove3:				; Command argument ending
@@ -1946,13 +1945,13 @@ eczSave:
 		jp	z, eczSave2
 		cp	1
 		jp	z, eczSave1
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bczSave	; Body of ZSAVE	command
 		jp	eczSave3
 eczSave1:				; Routine name primitive
 		call	RoutineN
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bczSaveN	; Body of ZSAVE	<name> command
 eczSave2:				; Command argument ending
@@ -1977,7 +1976,7 @@ ecHangHalt:
 		cp	3
 		jp	nz, ecHang1
 ecHangHalt1:				; Halt
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3977
 		ld	hl, bmFlag
@@ -1991,14 +1990,14 @@ ecHangHalt1:				; Halt
 Trans:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	Entry		; Routine entry
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, PushCase	; Push CASE in the stack (AC71)
 		call	ArgCond		; Argument conditional
 		ld	a, (Case)	; X return; Transfer point executable
 		cp	1
 		jp	z, TransEnd
-		ld	a, (bmActFlag)	; Remove label[^routine] from stack
+		ld	a, (bmActFL)	; Remove label[^routine] from stack
 		or	a
 		call	z, ClrTRInfo	; Clear	off transpt info (AC69)
 TransEnd:
@@ -2011,7 +2010,7 @@ sub_126B:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, 1
 		ld	(SetSW), a
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, ZeroToS	; Zero Top of Stack
 		ld	a, (Token)
@@ -2070,10 +2069,10 @@ loc_12E2:
 CkFunction:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, 1
-		ld	(byte_0548), a
+		ld	(FunctionFL), a
 		call	Function	; Check	for function reference
 		xor	a
-		ld	(byte_0548), a
+		ld	(FunctionFL), a
 		ret
 ; End of function CkFunction
 ; =============== S U B	R O U T	I N E =======================================
@@ -2199,7 +2198,7 @@ Error19:
 ; =============== S U B	R O U T	I N E =======================================
 ; Illegal expression
 Error20:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3FBA
 		ld	a, 20
@@ -2427,7 +2426,7 @@ PostCond:
 		ld	a, (Case)
 		cp	1
 		jp	z, PostCond1
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, SetAFb0	; Sets bit 0 of	bmActFlag
 PostCond1:				; Check	for room on the	syntax stack
@@ -2556,7 +2555,7 @@ IndName1:				; Loads	to (Token) the token code of char (++pStkPos)
 		call	ExprAtom	; Expression atom
 		ld	a, 4		; In case semantic execution inhibited
 		ld	(Case),	a
-		ld	a, (bmActFlag)	; Set NamInd; Execute Stack; Set Case
+		ld	a, (bmActFL)	; Set NamInd; Execute Stack; Set Case
 		or	a
 		call	z, AC109	; Put indirect string on stack
 		ld	a, (Case)	; Syntax checking only
@@ -2604,7 +2603,7 @@ DoCRLFFF:
 		cp	0Ch		; Is it	'!'?
 		jp	nz, DoCRLFFF1
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, PrintCRLF
 		jp	DoCRLFFF3
@@ -2617,7 +2616,7 @@ DoCRLFFF1:
 		ret
 DoCRLFFF2:				; Loads	to (Token) the token code of char (++pStkPos)
 		call	GToken
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, PrintFF
 DoCRLFFF3:
@@ -2638,7 +2637,7 @@ DoHSPC:
 DoHSPC1:				; Loads	to (Token) the token code of char (++pStkPos)
 		call	GToken
 		call	IntExp		; Integer-Value	expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, HSPC		; Outputs horizontal spacing (W	?x or R	?x)
 		ld	a, 1
@@ -2646,24 +2645,25 @@ DoHSPC1:				; Loads	to (Token) the token code of char (++pStkPos)
 		ret
 ; End of function DoHSPC
 ; =============== S U B	R O U T	I N E =======================================
-sub_15DE:
+; Does a timeout after a command
+DoTimeout:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, (Token)
 		cp	16h		; Is it	':'?
-		jp	z, loc_15EE
+		jp	z, DoTimeout1
 		xor	a
 		ld	(Result), a
 		ret
-loc_15EE:				; Loads	to (Token) the token code of char (++pStkPos)
+DoTimeout1:				; Loads	to (Token) the token code of char (++pStkPos)
 		call	GToken
 		call	NumExp		; Numeric-Value	expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
-		call	z, sub_486E
+		call	z, Timeout
 		ld	a, 1
 		ld	(Result), a
 		ret
-; End of function sub_15DE
+; End of function DoTimeout
 ; =============== S U B	R O U T	I N E =======================================
 ; Routine entry
 Entry:
@@ -2704,7 +2704,7 @@ RoutineN:
 		ld	a, (Result)
 		cp	1
 		jp	nz, Error28	; Illegal routine or label name
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, AC110	; Check	for end	of all levels of name indir
 RoutineN1:
@@ -2721,7 +2721,7 @@ Linof:					; Check	for room on the	syntax stack
 		ld	a, (Token)
 		cp	5		; Is it	'+'?
 		jp	z, Linof1
-		ld	a, (bmActFlag)	; Zero ToS (zero offset)
+		ld	a, (bmActFL)	; Zero ToS (zero offset)
 		or	a
 		call	z, ZeroToS	; Zero Top of Stack
 		xor	a
@@ -2750,7 +2750,7 @@ Label:
 		cp	1
 		jp	nz, Error28	; Illegal routine or label name
 Label1:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, AC110	; Check	for end	of all levels of name indir
 Label2:
@@ -2766,7 +2766,7 @@ DevParam:
 		cp	19h		; Is it	'('?
 		jp	z, DevParam1
 		call	Expr		; Expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4A8E
 		jp	DevParam4
@@ -2775,7 +2775,7 @@ DevParam1:				; Loads	to (Token) the token code of char (++pStkPos)
 		jp	DevParam3
 DevParam2:				; Expression
 		call	Expr
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4A8E
 		call	sub_1718
@@ -2793,7 +2793,7 @@ DevParam3:
 		ld	a, (Case)
 		cp	2
 		jp	z, DevParam4
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4ADA
 		jp	DevParam3
@@ -2829,9 +2829,9 @@ loc_173A:
 StrExp:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	Expr		; Expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
-		call	z, Null1
+		call	z, Null1	; Does nothing
 		ld	a, 1
 		ld	(Result), a
 		ret
@@ -2841,7 +2841,7 @@ StrExp:
 NumExp:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	Expr		; Expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, ExprToNum	; Convert expression to	numeric	value
 		ld	a, 1
@@ -2853,7 +2853,7 @@ NumExp:
 IntExp:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	Expr		; Expression
-		ld	a, (bmActFlag)	; Convert to numeric value
+		ld	a, (bmActFL)	; Convert to numeric value
 		or	a
 		call	z, ExprToInt	; Convert expression to	integer
 		ld	a, 1
@@ -2867,7 +2867,7 @@ TVExp:
 		call	Expr		; Expression
 		ld	a, 1		; In case semantic execution inhibited
 		ld	(Case),	a
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, ExpToTV	; Convert expression to	truth-value
 		ld	a, 1
@@ -2915,13 +2915,13 @@ Expr3:					; Loads	to (Token) the token code of char (++pStkPos)
 		ld	(hl), a
 Expr4:
 		call	sub_17FF
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_44A6
 		jp	Expr1
 Expr5:					; Expression atom
 		call	ExprAtom
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_31CA
 		jp	Expr1
@@ -2929,9 +2929,9 @@ Expr5:					; Expression atom
 ; =============== S U B	R O U T	I N E =======================================
 sub_17FF:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
-		call	z, Null1
+		call	z, Null1	; Does nothing
 		ld	(word_02FA), ix
 		call	IndName		; Name level indirection
 		ld	a, (Case)
@@ -2946,7 +2946,7 @@ loc_1823:
 		ld	a, (Result)
 		cp	1
 		jp	z, loc_1823
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, AC110	; Check	for end	of all levels of name indir
 loc_1835:
@@ -2961,14 +2961,14 @@ sub_183B:
 		cp	1Ch		; Is it	'.'?
 		jp	nz, loc_1865
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4E73
 		call	IntLit		; Check	for integer literal
 		ld	a, (Result)
 		cp	1
 		jp	z, loc_1898
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4C3E
 		jp	loc_1898
@@ -2987,12 +2987,12 @@ loc_1871:
 		ld	a, (Result)
 		cp	1
 		jp	z, loc_1898
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4C3E
 		jp	loc_1898
 loc_1891:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4E9C
 loc_1898:
@@ -3013,7 +3013,7 @@ loc_18AE:
 ; Expression atom
 ExprAtom:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, ZeroToS	; Zero Top of Stack
 		call	UnaryOp		; Count	unary operators	( ', + and -)
@@ -3027,7 +3027,7 @@ ExprAtom:
 		jp	nz, Error12	; Unmatched parentheses
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 ExprAtomEnd:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, ApplyUnOp	; Apply	unary operators, stack ExprAtom
 		ld	a, 1
@@ -3050,7 +3050,7 @@ ExprAtom1:				; Check	for numeric literal
 		ld	a, (Result)
 		cp	1
 		jp	nz, ExprAtom2
-		ld	a, (bmActFlag)	; Search symbol	table for LocalVarName
+		ld	a, (bmActFL)	; Search symbol	table for LocalVarName
 		or	a
 		call	z, sub_42C0	; (todo) AC81
 		jp	ExprAtomEnd
@@ -3059,7 +3059,7 @@ ExprAtom2:				; Global variable name
 		ld	a, (Result)
 		cp	1
 		jp	nz, Error20	; Illegal expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_443E	; (todo) AC85
 		jp	ExprAtomEnd
@@ -3072,7 +3072,7 @@ GLVarName:
 		ld	a, (Result)
 		cp	1
 		jp	nz, GLVarName1
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, PushOne	; Push a 1 in the stack
 		jp	GLVarNameE
@@ -3081,7 +3081,7 @@ GLVarName1:				; Global variable name
 		ld	a, (Result)
 		cp	1
 		jp	nz, Error23	; Illegal variable name
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, PushMinusOne	; Push a -1 in the stack
 GLVarNameE:
@@ -3136,7 +3136,7 @@ GVarName2:				; Check	for a name literal
 		cp	1
 		jp	nz, Error23	; Illegal variable name
 Subscript:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4D6E	; (todo) AC27
 GVarName3:
@@ -3145,11 +3145,11 @@ GVarName3:
 		jp	nz, GVarName5
 GVarName4:				; Loads	to (Token) the token code of char (++pStkPos)
 		call	GToken
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, PushGlobal	; Push global on stack
 		call	Expr		; Check	for subscript expression
-		ld	a, (bmActFlag)	; Stack	expression value as integer
+		ld	a, (bmActFL)	; Stack	expression value as integer
 		or	a
 		call	z, sub_29C5	; (todo) AC22
 		ld	a, (Token)	; Look or comma	(more subscripts)
@@ -3158,11 +3158,11 @@ GVarName4:				; Loads	to (Token) the token code of char (++pStkPos)
 		cp	1Ah		; Is it	')'?
 		jp	nz, Error12	; Unmatched parentheses
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-GVarName5:
+GVarName5:				; Indirection flag
 		ld	a, (IndFL)
 		cp	1
 		jp	nz, GVarName6
-		ld	a, (bmActFlag)	; Check	end of one or more levels of name indirection
+		ld	a, (bmActFL)	; Check	end of one or more levels of name indirection
 		or	a
 		call	z, CkEndNLI	; Check	for end	on name	level indirection
 		ld	a, (Token)
@@ -3202,7 +3202,7 @@ Function1:				; Loads	to (Token) the token code of char (++pStkPos)
 ; Entry	point of $ASCII	function
 efAscii:
 		call	FSIEX		; String then integer expression primitive
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfAscii	; Body of $ASCII function
 		jp	fEnd		; Function ending primitive
@@ -3210,12 +3210,12 @@ efAscii:
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $CHAR function
 efChar:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, ZeroToS	; Zero Top of Stack
 efChar1:				; Integer-Value	expression
 		call	IntExp
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfChar	; Body of $CHAR	function
 		ld	a, (Token)
@@ -3224,7 +3224,7 @@ efChar1:				; Integer-Value	expression
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 		jp	efChar1
 efChar2:				; Compress character on	stack
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, AC104	; Make stack ToS to string for $CHAR
 		jp	fEnd		; Function ending primitive
@@ -3233,7 +3233,7 @@ efChar2:				; Compress character on	stack
 ; Entry	point of $DATA function
 efData:
 		call	GLVarName	; Global/Local variable	name
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfData	; Body of $DATA	function
 		jp	fEnd		; Function ending primitive
@@ -3253,7 +3253,7 @@ efExtract1:				; Integer expression primitive
 		ld	a, 2
 		ld	(Case),	a
 efExtract2:				; Extract characters
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfExtract	; Body of $EXTRACT function
 		jp	fEnd		; Function ending primitive
@@ -3262,7 +3262,7 @@ efExtract2:				; Extract characters
 ; Entry	point of $FIND function
 efFind:
 		call	FSSEX		; Two strings then integer expression primitive
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfFind	; Body of $FIND	function
 		jp	fEnd		; Function ending primitive
@@ -3276,7 +3276,7 @@ efJustify:
 		cp	1
 		jp	nz, Error22	; Missing comma
 		call	IntExpr		; Integer expression primitive
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfJustify	; Body of $JUSTIFY function
 		jp	fEnd		; Function ending primitive
@@ -3295,7 +3295,7 @@ efLength:
 		ld	a, 1
 		ld	(Result), a
 efLength1:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfLength	; Body of $LENGTH function
 		jp	fEnd		; Function ending primitive
@@ -3306,7 +3306,7 @@ efNext:
 		ld	a, 1
 		ld	(bFlagNext), a
 		call	GLVarName	; Global/Local variable	name
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfNxtOrd	; Body of $NEXT	and $ORDER functions
 		xor	a
@@ -3319,7 +3319,7 @@ efOrder:
 		ld	a, 1
 		ld	(bFlagOrder), a
 		call	GLVarName	; Global/Local variable	name
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfNxtOrd	; Body of $NEXT	and $ORDER functions
 		xor	a
@@ -3339,7 +3339,7 @@ efPiece:
 		ld	a, 2
 		ld	(Case),	a
 efPiece1:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_3367
 		jp	fEnd		; Function ending primitive
@@ -3348,7 +3348,7 @@ efPiece1:
 ; Entry	point of $RANDOM function
 efRandom:
 		call	IntExp		; Integer-Value	expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfRandom	; Body of $RANDOM function
 		jp	fEnd		; Function ending primitive
@@ -3356,7 +3356,7 @@ efRandom:
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $SELECT function
 efSelect:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		push	af
 		call	sub_2616
 efSelect1:				; Truth-Value expression
@@ -3365,13 +3365,13 @@ efSelect1:				; Truth-Value expression
 		cp	16h		; Is it	':'?
 		jp	nz, Error18	; Illegal character
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, efSelect2
 		ld	a, (Case)
 		cp	1
 		jp	z, efSelect3
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, SetAFb0	; Sets bit 0 of	bmActFlag
 efSelect2:				; Expression
@@ -3380,7 +3380,7 @@ efSelect2:				; Expression
 		jp	efSelect4
 efSelect3:				; Expression
 		call	Expr
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4A81
 efSelect4:
@@ -3392,7 +3392,7 @@ efSelect4:
 efSelect5:
 		call	CheckTrueV
 		pop	af
-		ld	(bmActFlag), a
+		ld	(bmActFL), a
 		jp	fEnd		; Function ending primitive
 ; End of function efSelect
 ; =============== S U B	R O U T	I N E =======================================
@@ -3402,13 +3402,13 @@ efText:
 		ld	a, (Result)
 		cp	1
 		jp	nz, efText1
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfTextO	; Body of $TEXT	function with Offset
 		jp	fEnd		; Function ending primitive
 efText1:
 		call	Liner
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfTextL	; Body of $TEXT	function with LineRef
 		jp	fEnd		; Function ending primitive
@@ -3423,7 +3423,7 @@ efView:
 ; Entry	point of $ZCHECK function
 efzCheck:
 		call	Expr		; Expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfcCheck	; Body of $ZCHECK function
 		jp	fEnd		; Function ending primitive
@@ -3432,7 +3432,7 @@ efzCheck:
 ; Entry	point of $ZEXISTS function
 efzExists:
 		call	Expr		; Expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, bfzExists	; Body of $ZEXISTS function
 		jp	fEnd		; Function ending primitive
@@ -3448,7 +3448,7 @@ efzOrder:
 		ld	a, (Result)
 		cp	0
 		jp	z, Error20	; Illegal expression
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4EAC
 		jp	fEnd		; Function ending primitive
@@ -3505,7 +3505,7 @@ sub_1C40:
 		call	SSChk		; Check	for room on the	syntax stack
 		xor	a
 		ld	(Result), a
-		ld	a, (IndFL)
+		ld	a, (IndFL)	; Indirection flag
 		cp	2
 		jp	nz, locret_1C5F
 		ld	a, (Token)
@@ -3529,7 +3529,7 @@ sub_1C60:
 		ld	hl, Token
 		cp	(hl)
 		jp	c, locret_1CA6
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, loc_1C9E
 		ld	a, 0Eh
@@ -3538,7 +3538,7 @@ sub_1C60:
 		jp	c, loc_1C8E
 		call	ExprToNum	; Convert expression to	numeric	value
 		jp	loc_1C91
-loc_1C8E:
+loc_1C8E:				; Does nothing
 		call	Null1
 loc_1C91:
 		ld	a, (Token)
@@ -3557,7 +3557,7 @@ locret_1CA6:
 ; Get Function/Special Variable	name
 GetFunSVName:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (byte_0548)
+		ld	a, (FunctionFL)
 		or	a
 		jp	z, GetFunSVName1
 		call	sub_850B
@@ -3570,12 +3570,12 @@ GetFunSVName2:
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $HOROLOG variable
 evHorolog:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
 		call	GetCurTime	; Returns nothing as this is CP/M
 		ld	hl, ibcdDay
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
@@ -3583,7 +3583,7 @@ evHorolog:
 		ld	(ix+0),	','     ; Push $H delimiter (,)
 		inc	ix
 		ld	hl, ibcdUnk03
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
@@ -3606,7 +3606,7 @@ evHorolog:
 evIo:
 		ld	a, (IODevice)
 		ld	(IT), a
-		jp	sub_1E68
+		jp	PushInt
 ; End of function evIo
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $JOB variable
@@ -3614,12 +3614,12 @@ evJob:
 		ld	de, ibcdTemp0
 		ld	hl, ibcdUnk08
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
-		jp	sub_1E5A
+		jp	PushChar
 ; End of function evJob
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $STORAGE variable
 evStorage:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
 		ld	hl, (pSymbolTbl)
@@ -3637,12 +3637,12 @@ evTest:
 		cp	2
 		jp	z, Error03	; Undefined local variable
 		ld	(IT), a
-		jp	sub_1E68
+		jp	PushInt
 ; End of function evTest
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $X variable
 evX:
-		ld	a, (byte_0548)
+		ld	a, (FunctionFL)
 		or	a
 		jp	z, evX1
 		ld	(SetBs), ix
@@ -3657,12 +3657,12 @@ evX1:
 		ld	de, ibcdTemp0
 		ld	hl, (pDevX)
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
-		jp	sub_1E5A
+		jp	PushChar
 ; End of function evX
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $Y variable
 evY:
-		ld	a, (byte_0548)
+		ld	a, (FunctionFL)
 		or	a
 		jp	z, evY1
 		ld	(SetBs), ix
@@ -3677,7 +3677,7 @@ evY1:
 		ld	de, ibcdTemp0
 		ld	hl, (pDevY)
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
-		jp	sub_1E5A
+		jp	PushChar
 ; End of function evY
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $PIECE	variable
@@ -3704,7 +3704,7 @@ esvPiece2:
 		cp	1Ah		; Is it	')'?
 		jp	nz, Error12	; Unmatched parentheses
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		call	z, sub_4E86
 		ld	a, 1
@@ -3714,10 +3714,10 @@ esvPiece2:
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $ERROR	variable
 esvError:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
-		ld	a, (byte_0548)
+		ld	a, (FunctionFL)
 		or	a
 		jp	nz, esvError1
 		ld	hl, byte_A04B
@@ -3731,7 +3731,7 @@ esvError1:
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $ZNAME	variable
 evzName:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
 		ld	hl, (pRtnName)
@@ -3741,7 +3741,7 @@ evzName:
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $ZCOUNT variable
 evzCount:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
 		call	sub_7974
@@ -3753,7 +3753,7 @@ evzCount:
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $ZGLOBAL variable
 evzGlobal:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
 		ld	a, (GlobalsDR)
@@ -3770,7 +3770,7 @@ evzGlobal:
 ; =============== S U B	R O U T	I N E =======================================
 ; Entry	point of $ZROUTINE variable
 evzRoutine:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
 		ld	a, (RoutinesDR)
@@ -3785,22 +3785,22 @@ evzRoutine:
 		ret
 ; End of function evzRoutine
 ; =============== S U B	R O U T	I N E =======================================
-sub_1E5A:
-		ld	a, (bmActFlag)
+PushChar:
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
 		ld	hl, ibcdTemp0
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
 		ret
-; End of function sub_1E5A
+; End of function PushChar
 ; =============== S U B	R O U T	I N E =======================================
-sub_1E68:
-		ld	a, (bmActFlag)
+PushInt:
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
 		ld	a, (IT)
-		call	IntToStr
-; End of function sub_1E68
+		call	IntToStr	; Convert integer to string and	push it
+; End of function PushInt
 ; =============== S U B	R O U T	I N E =======================================
 fFinish:
 		ret
@@ -3809,7 +3809,7 @@ fFinish:
 sub_1E76:
 		call	SSChk		; Check	for room on the	syntax stack
 		xor	a
-		ld	(Result), a
+		ld	(Result), a	; Set result to	0
 		ld	a, (Token)
 		cp	5		; Is it	'+'?
 		jp	c, locret_1EB7
@@ -3817,7 +3817,7 @@ sub_1E76:
 		ld	hl, Token
 		cp	(hl)		; Is it	'_'?
 		jp	c, locret_1EB7
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, loc_1EAF
 		ld	a, 0Eh
@@ -3826,7 +3826,7 @@ sub_1E76:
 		jp	c, loc_1EA4
 		call	ExprToNum	; Convert expression to	numeric	value
 		jp	loc_1EA7
-loc_1EA4:
+loc_1EA4:				; Does nothing
 		call	Null1
 loc_1EA7:
 		ld	a, (Token)
@@ -3845,7 +3845,7 @@ NakedRef:
 		ld	a, (Locks)
 		cp	1
 		jp	z, Error36	; Naked	global reference illegal
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, NakedRefEnd
 		ld	a, 1
@@ -3873,7 +3873,7 @@ StrLit:
 		ld	a, (PF)
 		or	a
 		jp	z, StrLit2
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, StrLit2
 		ld	hl, ibcdUnk05
@@ -3912,7 +3912,7 @@ StrLit3:
 		jp	c, StrLit4
 		jp	Error18		; Illegal character
 StrLit4:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, StrLit2
 		ld	a, (NumOfParams)
@@ -3926,7 +3926,7 @@ StrLit4:
 		inc	(hl)
 		jp	StrLit2
 StrLit5:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, StrLitEnd
 		ld	a, (PF)
@@ -3986,7 +3986,7 @@ loc_1FFA:
 		ld	(PF), a
 		jp	locret_20DC
 loc_2002:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, loc_203A
 		ld	hl, ibcdUnk05
@@ -4032,7 +4032,7 @@ loc_203A:
 		jp	z, loc_206A
 		jp	Error21		; Illegal pattern
 loc_206A:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, loc_207E
 		ld	hl, (pStkPos)
@@ -4057,7 +4057,7 @@ loc_207E:				; Loads	to (Token) the token code of char (++pStkPos)
 loc_209B:
 		ld	a, 1
 		ld	(Result), a
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, locret_20DC
 		ld	hl, (TPP)
@@ -4086,7 +4086,7 @@ locret_20DC:
 ; Count	unary operators	( ', + and -)
 UnaryOp:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, UnaryOp1
 		dec	ix		; Get unary operator count
@@ -4100,7 +4100,7 @@ UnaryOp1:
 		ld	hl, Token
 		cp	(hl)		; Is it	'-'?
 		jp	c, UnaryOp3
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, UnaryOp2
 		ld	a, (Token)	; Save unary operator
@@ -4112,7 +4112,7 @@ UnaryOp2:				; Increment count
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 		jp	UnaryOp1
 UnaryOp3:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, UnaryOpEnd
 		ld	a, (IT)		; Save count
@@ -4139,7 +4139,7 @@ loc_2148:
 		ld	a, 2
 		ld	(IT), a
 loc_214D:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	z, loc_2167
 		ld	a, (IT)
@@ -4151,7 +4151,7 @@ loc_214D:
 		ld	(Case),	a
 locret_2166:
 		ret
-loc_2167:
+loc_2167:				; Does nothing
 		call	Null1
 		dec	ix
 		dec	ix
@@ -4243,7 +4243,7 @@ loc_2207:
 		jp	z, loc_2242
 		cp	18h		; Is it	'@'?
 		jp	nz, Error24	; Illegal use of indirection
-loc_2242:
+loc_2242:				; Indirection flag
 		ld	a, (IndFL)
 		ld	(ix+0),	a
 		inc	ix
@@ -4251,7 +4251,7 @@ loc_2242:
 		ld	(ix+0),	a
 		inc	ix
 		ld	a, (IT)
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		ld	a, 3
 		ld	(Mode),	a
 		ld	a, 3
@@ -4285,7 +4285,7 @@ NumLit1:
 		ld	a, (Result)
 		cp	FALSE
 		jp	z, NumLit3
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, NumLit2
 		dec	ix
@@ -4306,7 +4306,7 @@ NumLit3:
 		ld	a, (I1)
 		or	a
 		jp	z, NumLit22
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, NumLit5
 		ld	a, (I2)
@@ -4332,7 +4332,7 @@ NumLit5:				; Check	for integer literal
 		jp	z, NumLit8
 		ld	a, TRUE
 		ld	(IT), a
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, NumLit9
 		dec	ix		; Get count of decimal digits
@@ -4357,7 +4357,7 @@ NumLit7:				; Put last digit back
 		inc	ix
 		jp	NumLit9
 NumLit8:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, NumLit9
 		dec	ix		; Get rid of decimal place
@@ -4399,7 +4399,7 @@ NumLit11:
 		ld	a, (Result)
 		or	a
 		jp	z, NumLitErr
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, NumLitEnd
 		call	StrToChar	; Converts a string on ToS to char (0-255)
@@ -4575,7 +4575,7 @@ NumLit21:
 		or	a
 		jp	nz, NumLit6
 NumLit22:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, NumLitEnd
 		ld	a, (I3)
@@ -4646,7 +4646,7 @@ IntLit2:
 		ld	a, FALSE
 		ld	(Delete), a
 IntLit3:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, IntLit4
 		ld	hl, (pStkPos)
@@ -4664,7 +4664,7 @@ IntLit5:
 		cp	3		; Is it	'0' to '9'?
 		jp	z, IntLit2
 IntLit6:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, IntLitEnd
 		ld	a, (N)
@@ -4687,19 +4687,19 @@ IntLitEnd:
 ; End of function IntLit
 ; =============== S U B	R O U T	I N E =======================================
 sub_2616:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		ld	(IOTemp2), a
 		or	a
 		jp	z, locret_2625
 		ld	a, 2
-		ld	(bmActFlag), a
+		ld	(bmActFL), a
 locret_2625:
 		ret
 ; End of function sub_2616
 ; =============== S U B	R O U T	I N E =======================================
 ; Clears bit 0 of bmActFlag
 ClrAFB0:
-		ld	hl, bmActFlag
+		ld	hl, bmActFL
 		ld	a, 11111110b
 		and	(hl)
 		ld	(hl), a
@@ -4733,7 +4733,7 @@ NameLit1:				; It is	a name
 		ld	(NameLen), a
 		ld	(pName), ix
 NameLit2:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, NameLit3
 		ld	a, (NameLen)
@@ -4756,7 +4756,7 @@ NameLit3:				; Get next token value
 		jp	c, NameLit4
 		jp	NameLit2
 NameLit4:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, NameLitEnd
 		ld	a, (NameLen)	; Save name length
@@ -4773,7 +4773,7 @@ AC16:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, 1
 		ld	(Case),	a
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	z, AC16End
 		ld	a, (Token)
@@ -4804,7 +4804,7 @@ NumLabel1:
 		xor	a
 		ld	(Count), a
 NumLabel2:
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, NumLabel3
 		ld	a, (Count)
@@ -4821,7 +4821,7 @@ NumLabel3:				; Loads	to (Token) the token code of char (++pStkPos)
 		ld	a, (Token)
 		cp	3		; Is it	'0' to '9'?
 		jp	z, NumLabel2
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, NumLabelE
 		ld	a, (Count)
@@ -4835,7 +4835,7 @@ NumLabelE:
 ; =============== S U B	R O U T	I N E =======================================
 sub_2723:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (bmActFlag)
+		ld	a, (bmActFL)
 		or	a
 		jp	nz, locret_27A0
 		ld	a, 1
@@ -5055,7 +5055,7 @@ bfJustify:
 		ld	a, (Result)
 		cp	1
 		jp	z, loc_298D
-		call	Null1
+		call	Null1		; Does nothing
 loc_2904:
 		dec	ix
 		dec	ix
@@ -5154,7 +5154,7 @@ sub_29C5:
 		ld	(NR), a
 		dec	hl
 		ld	a, (hl)
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		ld	bc, -(PTRLN)
 		add	hl, bc
 		ld	(Ptr2),	hl
@@ -5368,7 +5368,7 @@ HSPCEnd:
 ; =============== S U B	R O U T	I N E =======================================
 ; Sets bit 0 of	bmActFlag
 SetAFb0:
-		ld	hl, bmActFlag
+		ld	hl, bmActFL
 		ld	a, (hl)
 		or	00000001b
 		ld	(hl), a
@@ -5443,6 +5443,7 @@ ExprToInt:
 		ret
 ; End of function ExprToInt
 ; =============== S U B	R O U T	I N E =======================================
+; Does nothing
 Null1:
 		ret
 ; End of function Null1
@@ -5512,7 +5513,7 @@ bfAscii1:
 		ld	a, (hl)
 		ld	(N), a
 		ld	a, (N)
-		call	IntToStr
+		call	IntToStr	; Convert integer to string and	push it
 		ret
 bfAscii2:
 		dec	ix
@@ -5737,7 +5738,7 @@ loc_2E79:
 		ld	ix, (word_02A4)
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, (II)
-		call	IntToStr
+		call	IntToStr	; Convert integer to string and	push it
 		ret
 loc_2E87:
 		call	sub_70A8
@@ -6043,7 +6044,7 @@ bfFind5:
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
 bfFindEnd:
 		ld	hl, ibcdTemp0
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
 		ret
 ; End of function bfFind
 ; =============== S U B	R O U T	I N E =======================================
@@ -6065,7 +6066,7 @@ bfLength:
 		call	SSChk		; Check	for room on the	syntax stack
 bfLength1:
 		ld	a, (StrLen)
-		call	IntToStr
+		call	IntToStr	; Convert integer to string and	push it
 		ret
 bfLength2:
 		dec	ix
@@ -6144,7 +6145,7 @@ loc_31F5:
 		jp	c, loc_3204
 		call	ExprToNum	; Convert expression to	numeric	value
 		jp	loc_3207
-loc_3204:
+loc_3204:				; Does nothing
 		call	Null1
 loc_3207:
 		dec	ix
@@ -6361,7 +6362,7 @@ sub_33D6:
 		ld	a, (SetFL)
 		cp	1
 		jp	z, loc_3412
-		ld	a, (byte_0548)
+		ld	a, (FunctionFL)
 		or	a
 		jp	nz, Error18	; Illegal character
 		ld	a, 1
@@ -6772,7 +6773,7 @@ bczGo:
 		ld	(ForSW), a
 		dec	ix
 		ld	a, (ix+0)
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		call	sub_5555
 		call	sub_574A
 		ld	a, (DeviceInUse)
@@ -7025,7 +7026,7 @@ loc_3982:
 ; =============== S U B	R O U T	I N E =======================================
 ; Sets bit 1 of	bmActFlag
 SetAFb1:
-		ld	hl, bmActFlag
+		ld	hl, bmActFL
 		ld	a, (hl)
 		or	00000010b
 		ld	(hl), a
@@ -7044,7 +7045,7 @@ bcIf:
 		ld	a, (IfSW)
 		or	a
 		jp	nz, bcIf1
-		ld	hl, bmActFlag
+		ld	hl, bmActFL
 		ld	a, (hl)
 		or	00000010b
 		ld	(hl), a
@@ -7057,7 +7058,7 @@ bcElse:
 		ld	a, (IfSW)
 		cp	1
 		jp	nz, bcElseE
-		ld	hl, bmActFlag
+		ld	hl, bmActFL
 		ld	a, (hl)
 		or	00000010b
 		ld	(hl), a
@@ -7373,7 +7374,7 @@ sub_3C2E:
 loc_3C42:
 		ld	(word_0274), ix
 		ld	hl, ibcdVmin1
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
 		jp	loc_3CB9
 loc_3C4F:
 		ld	a, 0
@@ -7421,7 +7422,7 @@ loc_3C9D:
 loc_3CA7:
 		ld	(word_0274), ix
 		ld	a, (tmpChar)
-		call	IntToStr
+		call	IntToStr	; Convert integer to string and	push it
 		ld	hl, (pDevX)
 		ld	c, 5
 		call	IbcdHL		; Increments by	1 the C	bytes long BCD pointed by (HL)
@@ -7619,12 +7620,13 @@ PushCase:
 		ret
 ; End of function PushCase
 ; =============== S U B	R O U T	I N E =======================================
-sub_3E37:
+; Body of GOTO command
+bcGoto:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_5D1F
 		ld	hl, (pStkStart)
 		ld	(pLineBefore), hl
-loc_3E43:
+loc_3E43:				; Indirection flag
 		ld	a, (IndFL)
 		or	a
 		jp	z, loc_3E50
@@ -7667,7 +7669,7 @@ loc_3E98:
 		ld	a, 1
 		ld	(byte_A691), a
 		ret
-; End of function sub_3E37
+; End of function bcGoto
 ; =============== S U B	R O U T	I N E =======================================
 ; Body of DO command
 bcDo:
@@ -7711,7 +7713,7 @@ bcDo1:
 		ld	hl, byte_A671
 		call	sub_97D5
 		ld	hl, ibcdTemp1
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
 		ld	hl, byte_A65F
 		call	sub_97D5
 		ld	a, (ForSW)
@@ -7720,7 +7722,7 @@ bcDo1:
 		ld	a, (IndSW)
 		ld	(ix+0),	a
 		inc	ix
-		ld	a, (IndFL)
+		ld	a, (IndFL)	; Indirection flag
 		ld	(ix+0),	a
 		inc	ix
 		ld	a, (Mode)
@@ -7731,7 +7733,7 @@ bcDo1:
 		xor	a
 		ld	(ForSW), a
 		ld	(IndSW), a
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		ld	a, 0
 		ld	(Mode),	a
 		ld	a, 1
@@ -8325,7 +8327,7 @@ bfTextO1:
 		ld	hl, ibcdTemp0
 		ld	c, 5		; (todo) INTLN
 		call	DbcdHL		; Decrements by	1 the C	bytes long BCD pointed by (HL)
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
 		call	MV2LN		; Move Ptr1 to Lineref
 		call	Ln2Stk		; Line to Stack
 		xor	a
@@ -8546,7 +8548,7 @@ loc_460B:
 		ld	(Result), a
 loc_4629:
 		ld	a, (Result)
-		call	IntToStr
+		call	IntToStr	; Convert integer to string and	push it
 		ld	hl, (pIndex)
 		dec	hl
 		ld	(pStkPos), hl
@@ -8783,14 +8785,14 @@ sub_4839:
 		ld	(TPP), hl
 		ld	ix, (TPP)
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, bmActFlag
+		ld	hl, bmActFL
 		ld	a, (hl)
 		or	00000010b
 		ld	(hl), a
 		ret
 ; End of function sub_4839
 ; =============== S U B	R O U T	I N E =======================================
-sub_486E:
+Timeout:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	ExprToInt	; Convert expression to	integer
 		ld	hl, HangTime
@@ -8799,23 +8801,23 @@ sub_486E:
 		ld	(StrLen), a
 		ld	a, (Locks)
 		cp	1
-		jp	z, loc_489C
+		jp	z, Timeout2
 		ld	a, (hl)
 		and	11110000b
-		jp	nz, loc_4897
+		jp	nz, Timeout1
 		ld	c, 5
 		call	lZtest		; Tests	a C bytes long BCD pointed by (HL) for zero
-		jp	z, loc_4897
-		jp	loc_489C
-loc_4897:
+		jp	z, Timeout1
+		jp	Timeout2
+Timeout1:
 		xor	a
 		ld	(IfSW),	a
 		ret
-loc_489C:
+Timeout2:
 		ld	a, 1
 		ld	(IfSW),	a
 		ret
-; End of function sub_486E
+; End of function Timeout
 ; =============== S U B	R O U T	I N E =======================================
 sub_48A2:
 		call	SSChk		; Check	for room on the	syntax stack
@@ -8831,7 +8833,7 @@ sub_48A2:
 		ld	(pCurRtnLine), hl
 		ld	(word_9F9A), hl
 		ld	hl, (pEndOfRtn)
-		ld	(hl), 1Ah
+		ld	(hl), 1Ah	; End of file
 		ld	hl, bmFlag1	; b2:Routine not saved
 		ld	a, 11111011b
 		and	(hl)
@@ -8849,7 +8851,8 @@ sub_48D2:
 		ret
 ; End of function sub_48D2
 ; =============== S U B	R O U T	I N E =======================================
-sub_48E5:
+; Body oz ZLOAD	command
+bczLoad:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_5FDE
 		ld	hl, (pEndOfRtn)
@@ -8859,7 +8862,7 @@ sub_48E5:
 		and	(hl)
 		ld	(hl), a
 		ret
-; End of function sub_48E5
+; End of function bczLoad
 ; =============== S U B	R O U T	I N E =======================================
 sub_48F9:
 		ld	hl, (pStartOfRtn)
@@ -8964,7 +8967,7 @@ loc_49AC:
 ; =============== S U B	R O U T	I N E =======================================
 ; Push global on stack
 PushGlobal:
-		ld	a, (IndFL)
+		ld	a, (IndFL)	; Indirection flag
 		ld	(ix+0),	a
 		inc	ix
 		ld	a, (NR)
@@ -8977,7 +8980,7 @@ PushGlobal:
 		ld	(ix+0),	a
 		inc	ix
 		xor	a
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		ld	a, 0
 		ld	(SetSW), a
 		ret
@@ -9028,13 +9031,13 @@ bcXecute:
 		ld	hl, byte_A668	; (todo) Check this
 		call	sub_97D5
 		ld	hl, ibcdUnk07
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
 		ld	hl, (pRtnName)
 		call	sub_97D5
 		ld	a, (ForSW)
 		ld	(ix+0),	a
 		inc	ix
-		ld	a, (IndFL)
+		ld	a, (IndFL)	; Indirection flag
 		ld	(ix+0),	a
 		inc	ix
 		ld	a, (Mode)
@@ -9044,7 +9047,7 @@ bcXecute:
 		ld	(Mode),	a
 		xor	a
 		ld	(ForSW), a
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		ld	hl, (Ptr)
 		ld	(pStkStart), hl
 		dec	hl
@@ -9063,7 +9066,7 @@ AC104:
 sub_4A81:
 		ld	a, 1
 		ld	(IOTemp2), a
-		ld	hl, bmActFlag
+		ld	hl, bmActFL
 		ld	a, (hl)
 		or	00000010b
 		ld	(hl), a
@@ -9072,7 +9075,7 @@ sub_4A81:
 ; =============== S U B	R O U T	I N E =======================================
 sub_4A8E:
 		call	SSChk		; Check	for room on the	syntax stack
-		call	Null1
+		call	Null1		; Does nothing
 		call	sub_50FE
 		ld	(pIndex), ix
 		ld	de, (Ptr)
@@ -9127,7 +9130,7 @@ CkEndNLI:
 		jp	nz, Error24	; Illegal use of indirection
 CkEndNLI1:				; Return from indirection
 		call	IndRet
-		ld	a, (IndFL)
+		ld	a, (IndFL)	; Indirection flag
 		cp	2
 		jp	nz, CkEndNLIEnd
 		ld	a, (Token)
@@ -9184,7 +9187,7 @@ loc_4B7E:
 		call	sub_97BE
 		ld	hl, (pStkPos)
 		call	sub_97BE
-		ld	a, (IndFL)
+		ld	a, (IndFL)	; Indirection flag
 		ld	(ix+0),	a
 		inc	ix
 		ld	a, (Mode)
@@ -9199,7 +9202,7 @@ loc_4B7E:
 		ld	(pStkPos), hl
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 		ld	a, 1
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		ld	(Case),	a
 		ret
 ; End of function AC109
@@ -9207,7 +9210,7 @@ loc_4B7E:
 ; Check	for end	of all levels of name indir
 AC110:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (IndFL)
+		ld	a, (IndFL)	; Indirection flag
 		cp	1
 		jp	nz, AC1102
 AC1101:
@@ -9215,7 +9218,7 @@ AC1101:
 		cp	tknCRLF		; Is it	CR or LF?
 		jp	nz, Error24	; Illegal use of indirection
 		call	IndRet		; Return from indirection
-		ld	a, (IndFL)
+		ld	a, (IndFL)	; Indirection flag
 		cp	1
 		jp	z, AC1101
 AC1102:
@@ -9284,7 +9287,7 @@ locret_4C3D:
 sub_4C3E:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, ibcdVmin1
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
 		ret
 ; End of function sub_4C3E
 ; =============== S U B	R O U T	I N E =======================================
@@ -9303,7 +9306,7 @@ bfzExists:
 		ld	(pDevice), hl
 		call	FFirst		; Find first file
 		ld	a, (Result)
-		call	IntToStr
+		call	IntToStr	; Convert integer to string and	push it
 		ld	hl, (pIndex)
 		ld	(pDevice), hl
 		ret
@@ -9555,7 +9558,7 @@ bfcCheck2:
 		ld	ix, (Ptr)
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, (IT)
-		call	IntToStr
+		call	IntToStr	; Convert integer to string and	push it
 		ret
 ; End of function bfcCheck
 ; =============== S U B	R O U T	I N E =======================================
@@ -9585,8 +9588,8 @@ sub_4E9C:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, ibcdTemp0
 		call	StrToInt	; Converts string on ToS to integer
-		call	CharToStr	; Convert char (0-255) to string
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
+		call	CharToStr	; Convert char (0-255) to string and push it
 		ret
 ; End of function sub_4E9C
 ; =============== S U B	R O U T	I N E =======================================
@@ -10483,10 +10486,10 @@ sub_55D2:
 		ld	hl, byte_A668
 		call	sub_97D5
 		ld	hl, ibcdUnk07
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
 		ld	hl, (pRtnName)
 		call	sub_97D5
-		ld	a, (IndFL)
+		ld	a, (IndFL)	; Indirection flag
 		ld	(ix+0),	a
 		inc	ix
 		ld	a, (ForSW)
@@ -10505,7 +10508,7 @@ sub_55D2:
 		ld	(ix+0),	a
 		inc	ix
 		xor	a
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		ld	(IndSW), a
 		ld	(ForSW), a
 		ld	(DoSW),	a
@@ -12415,7 +12418,7 @@ sub_6612:
 		ld	(Mode),	a
 		dec	ix
 		ld	a, (ix+0)
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		dec	ix
 		ld	a, (ix+0)
 		ld	(IndSW), a
@@ -12528,7 +12531,7 @@ IndRet2:
 		ld	de, 2
 		add	hl, de
 		ld	a, (hl)
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		inc	hl
 		ld	a, (hl)
 		ld	(Mode),	a
@@ -12574,7 +12577,7 @@ IndRet4:
 		ld	(Mode),	a
 		dec	ix
 		ld	a, (ix+0)
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		call	sub_9789
 		ld	(pStkPos), hl
 		call	sub_9789
@@ -12857,7 +12860,7 @@ sub_69DD:
 		ld	(Mode),	a
 		dec	ix
 		ld	a, (ix+0)
-		ld	(IndFL), a
+		ld	(IndFL), a	; Indirection flag
 		dec	ix
 		ld	a, (ix+0)
 		ld	(ForSW), a
@@ -16507,7 +16510,7 @@ PrintErr2:
 		ex	de, hl
 		ld	(hl), 0Dh
 		pop	af
-		call	IntToStr
+		call	IntToStr	; Convert integer to string and	push it
 		dec	ix
 		dec	ix
 		ld	b, (ix+0)
@@ -16525,7 +16528,7 @@ PrintErr2:
 		ld	a, Plus
 		call	sub_8B33	; Puts A into the stack	(IX)
 		push	bc
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
 		pop	bc
 		call	sub_8B3A
 PrintErr3:
@@ -16945,7 +16948,7 @@ loc_8C40:
 		ld	c, 0Eh
 		call	MbcdDEHL	; Multiplies two C bytes long BCD pointed by DE	and HL
 					; result goes in MResult
-		ld	hl, ibcdResult	; Multiplication result
+		ld	hl, ibcdResult	; Operation result
 		jp	loc_8D86
 loc_8C6F:
 		push	af
@@ -16992,7 +16995,7 @@ loc_8CAF:
 		ld	c, 14
 		call	sub_9040
 		ld	de, byte_9F23
-		call	sub_8E9E
+		call	IDbcdDEHL	; Integer divide a C bytes long	BCD pointed by DE and HL
 		ld	a, b
 		or	a
 		jr	z, loc_8CD7
@@ -17010,7 +17013,7 @@ loc_8CD7:
 		ld	de, byte_9F15
 		call	CopyCDEHL	; Copy C bytes from (DE) to (HL)
 		ld	hl, lbcdTemp2
-		ld	de, ibcdResult	; Multiplication result
+		ld	de, ibcdResult	; Operation result
 		call	CopyCDEHL	; Copy C bytes from (DE) to (HL)
 		ld	a, (Signal1)
 		ld	(byte_04F1), a
@@ -17019,15 +17022,15 @@ loc_8CD7:
 		ld	a, (byte_04EF)
 		jp	loc_8B9C
 loc_8CFE:
-		cp	0Ah
+		cp	10
 		jr	nz, loc_8D1C
 		ld	hl, lbcdTemp1
 		ld	de, lbcdTemp2
 		ld	c, 14
 		call	sub_8FB4
 		ld	hl, lbcdTemp1
-		ld	de, ibcdResult	; Multiplication result
-		call	sub_8E9E
+		ld	de, ibcdResult	; Operation result
+		call	IDbcdDEHL	; Integer divide a C bytes long	BCD pointed by DE and HL
 		xor	a
 		ld	(byte_04EE), a
 		jr	loc_8D86
@@ -17367,7 +17370,8 @@ lZtest2:
 		ret
 ; End of function lZtest
 ; =============== S U B	R O U T	I N E =======================================
-sub_8E9E:
+; Integer divide a C bytes long	BCD pointed by DE and HL
+IDbcdDEHL:
 		push	af
 		push	de
 		push	hl
@@ -17395,17 +17399,17 @@ sub_8E9E:
 		ld	b, 0
 		lddr
 		or	a
-		jr	z, loc_8EC8
+		jr	z, IDbcdDEHL2
 		ld	b, a
 		xor	a
-loc_8EC4:
+IDbcdDEHL1:
 		ld	(de), a
 		dec	de
-		djnz	loc_8EC4
-loc_8EC8:
+		djnz	IDbcdDEHL1
+IDbcdDEHL2:
 		pop	hl
 		pop	af
-		jr	nc, loc_8ED9
+		jr	nc, IDbcdDEHL4
 		xor	a
 		pop	bc
 		push	bc
@@ -17413,23 +17417,23 @@ loc_8EC8:
 		sbc	hl, bc
 		inc	hl
 		ld	b, c
-loc_8ED4:
+IDbcdDEHL3:
 		rrd
 		inc	hl
-		djnz	loc_8ED4
-loc_8ED9:
+		djnz	IDbcdDEHL3
+IDbcdDEHL4:
 		pop	bc
 		pop	hl
 		pop	de
 		pop	af
 		ret
-; End of function sub_8E9E
+; End of function IDbcdDEHL
 ; =============== S U B	R O U T	I N E =======================================
 ; Multiplies two C bytes long BCD pointed by DE	and HL
 ; result goes in MResult
 MbcdDEHL:
 		push	hl
-		ld	hl, ibcdResult	; Multiplication result
+		ld	hl, ibcdResult	; Operation result
 		call	zeroCHL		; Fills	C bytes	pointed	by HL with 0x00
 		pop	hl
 		call	ZTest		; Tests	a bcd number for zero
@@ -17449,7 +17453,7 @@ MbcdDEHL:
 		exx			; Saves	a copy of the registers
 		pop	bc
 		push	bc
-		ld	hl, ibcdResult	; Multiplication result
+		ld	hl, ibcdResult	; Operation result
 		call	pHLtoLbcd	; Points HL to the last	byte of	C long BCD
 		ld	e, a
 		ex	af, af'         ; Restores AF from AF'
@@ -17619,7 +17623,7 @@ sub_8FB4:
 		ex	de, hl
 		ld	hl, byte_9F31
 		call	CopyCDEHL	; Copy C bytes from (DE) to (HL)
-		ld	hl, ibcdResult	; Multiplication result
+		ld	hl, ibcdResult	; Operation result
 		call	zeroCHL		; Fills	C bytes	pointed	by HL with 0x00
 		ld	b, c
 loc_8FCF:
@@ -17637,7 +17641,7 @@ loc_8FE1:
 		call	SCmp		; Compares two strings
 		jr	z, loc_9010
 		jr	nc, loc_9010
-		ld	hl, ibcdResult	; Multiplication result
+		ld	hl, ibcdResult	; Operation result
 		call	Mbcd2		; Multiplies C bytes long BCD pointed by (HL) by 2
 		ld	hl, byte_9F31
 		call	Dbcd2		; Divides C bytes long BCD pointed by (HL) by 2
@@ -17648,7 +17652,7 @@ loc_8FE1:
 		jr	nc, loc_8FE1
 loc_9004:				; Subtracts two	C bytes	long BCDs pointed by (DE) and (HL)
 		call	SbcdDEHL	; result goes in the BCD pointed by (HL)
-		ld	hl, ibcdResult	; Multiplication result
+		ld	hl, ibcdResult	; Operation result
 		call	IbcdHL		; Increments by	1 the C	bytes long BCD pointed by (HL)
 		jp	loc_8FE1
 loc_9010:
@@ -17716,7 +17720,7 @@ loc_904A:
 		push	hl
 		ld	hl, byte_9F23
 		call	sub_9014
-		ld	de, ibcdResult	; Multiplication result
+		ld	de, ibcdResult	; Operation result
 		call	AbcdDEHL	; Adds two C bytes long	BCDs pointed by	(DE) and (HL)
 					; result goes in the BCD pointed by (HL)
 		call	ZTest		; Tests	a bcd number for zero
@@ -18180,7 +18184,7 @@ sub_929E:
 		jr	z, loc_92C2
 		ld	a, Plus
 		call	putChar		; Outputs the character	on A to	the console
-		call	CharToStr	; Convert char (0-255) to string
+		call	CharToStr	; Convert char (0-255) to string and push it
 		ld	hl, byte_A65F
 		call	sub_97A2
 		ld	hl, byte_A65F
@@ -18368,7 +18372,7 @@ sub_939D:
 		ld	de, lbcdTemp1
 		call	MbcdDEHL	; Multiplies two C bytes long BCD pointed by DE	and HL
 					; result goes in MResult
-		ld	hl, ibcdResult	; Multiplication result
+		ld	hl, ibcdResult	; Operation result
 		call	ZTest		; Tests	a bcd number for zero
 		ld	b, a
 		ld	a, 1Ch
@@ -18645,6 +18649,7 @@ locret_9568:
 		ret
 ; End of function sub_9558
 ; =============== S U B	R O U T	I N E =======================================
+; Convert integer to string and	push it
 IntToStr:
 		push	de
 		push	bc
@@ -18812,7 +18817,7 @@ IntToCharEnd:
 		ret
 ; End of function IntToChar
 ; =============== S U B	R O U T	I N E =======================================
-; Convert char (0-255) to string
+; Convert char (0-255) to string and push it
 CharToStr:
 		push	hl
 		push	de
@@ -18822,22 +18827,22 @@ CharToStr:
 		ld	(Signal1), a
 		ld	a, (hl)
 		and	11110000b
-		jr	z, loc_9648
+		jr	z, CharToStr1
 		ld	a, 1
 		ld	(Signal1), a
 		ld	a, (hl)
 		and	00001111b
-		jr	loc_964A
-loc_9648:
+		jr	CharToStr2
+CharToStr1:
 		ld	a, (hl)
 		or	a
-loc_964A:
-		jr	nz, loc_9654
+CharToStr2:
+		jr	nz, CharToStr3
 		inc	hl
-		djnz	loc_9648
+		djnz	CharToStr1
 		ld	bc, 0
-		jr	loc_9662
-loc_9654:
+		jr	CharToStr4
+CharToStr3:
 		ld	a, b
 		add	a, a
 		ld	b, a
@@ -18845,10 +18850,10 @@ loc_9654:
 		ld	a, (hl)
 		and	11110000b
 		ld	a, 0
-		jr	nz, loc_9662
+		jr	nz, CharToStr4
 		inc	a
 		dec	b
-loc_9662:				; Push BCD into	the stack
+CharToStr4:				; Push BCD into	the stack
 		call	BCDPush
 		pop	bc
 		pop	de
@@ -20418,7 +20423,7 @@ ibcdVmax:	db 9, 99h, 99h,	99h, 99h
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0
 lbcdTemp1:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0
 lbcdTemp2:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0
-ibcdResult:	db 0, 0, 0, 0, 0	; Multiplication result
+ibcdResult:	db 0, 0, 0, 0, 0	; Operation result
 		db 0, 0, 0
 byte_9F0F:	db 0, 0, 0, 0, 0, 0
 byte_9F15:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0
@@ -20432,11 +20437,11 @@ lbcdRandomL:	db 0, 0, 0, 0, 0, 0, 0,	0, 23h,	45h, 67h, 89h, 87h, 63h
 TPP:		dw 0
 Result:		db 0
 Case:		db 0
-bmActFlag:	db 0
+bmActFL:	db 0
 Token:		db 0
 pStkPos:	dw 0
 Locks:		db 0
-IndFL:		db 0
+IndFL:		db 0			; Indirection flag
 IndSW:		db 0
 DoSW:		db 0
 ForSW:		db 0
@@ -20599,7 +20604,7 @@ SaveRtnBuf:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
-byte_A581:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
@@ -20770,7 +20775,7 @@ EnterDate2:
 		call	MbcdDEHL	; Multiplies two C bytes long BCD pointed by DE	and HL
 					; result goes in MResult
 		ld	hl, ibcdDay
-		ld	de, ibcdResult	; Multiplication result
+		ld	de, ibcdResult	; Operation result
 		call	AbcdDEHL	; Adds two C bytes long	BCDs pointed by	(DE) and (HL)
 					; result goes in the BCD pointed by (HL)
 		ld	de, ibcdV51134
