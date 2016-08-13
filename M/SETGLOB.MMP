@@ -93,4 +93,3 @@ fdir	c 2:0
 	w "."
 	q
 z	zs setglob zp setglob q
-
