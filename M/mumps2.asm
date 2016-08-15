@@ -1,6 +1,6 @@
 ; ===========================================================================
 ; UC Davis MicroMumps for CP/M - version 4.06
-; Rebuilt by Marcelo F. Dantas in February of 2014
+; Rebuilt by Marcelo F.	Dantas in February of 2014
 ; marcelo.f.dantas@gmail.com
 ; ===========================================================================
 ;
@@ -45,24 +45,24 @@ tknTAB:		equ 25h
 tknCRLF:	equ 26h
 ; ---------------------------------------------------------------------------
 		db 0,0,0,0
-GlobalsDR:	db 0
-RoutinesDR:	db 0
+GlobalsDR:	db 0			; Default drive	for globals
+RoutinesDR:	db 0			; Default drive	for routines
 ClrScrSize:	db 6			; Clear	screen for ANSI/VT100
 ClrScr:		db 1Bh,	5Bh, 48h, 1Bh, 5Bh, 4Ah, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0
 		db 0, 0, 0
 		dw 0
 PartSize:	dw 2000h		; Default partition size
-ErrorsDR:	db 0
-ErrorsFCB:	db 0
+ErrorsDR:	db 0			; Drive	for the	errors file
+ErrorsFCB:	db 0			; FCB for the errors file
 		db 'ERRORS  DAT'
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0
-GlobalsFCB:	db 0
+GlobalsFCB:	db 0			; FCB for the globals file
 		db 'GLOBALS DAT'
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0
 AutoexecFlag:	db 0			; Runs a pre-defined command line when loading
-CmdLineSz:	db 0
+CmdLineSz:	db 0			; Size of the command line
 CmdLine:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
@@ -79,16 +79,16 @@ CmdLine:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
-tmpPtr:		dw 0
-Ptr1:		dw 0
-Ptr2:		dw 0
-Ptr3:		dw 0
-word_0274:	dw 0
-word_0276:	dw 0
-word_0278:	dw 0
-word_027A:	dw 0
-word_027C:	dw 0
-word_027E:	dw 0
+pTmp1:		dw 0
+pTmp2:		dw 0
+pTmp3:		dw 0
+pTmp4:		dw 0
+pTmp5:		dw 0
+pTmp6:		dw 0
+pTmp7:		dw 0
+pTmp8:		dw 0
+pTmp9:		dw 0
+pTmp10:		dw 0
 		db 0
 		db 0
 		db 0
@@ -113,7 +113,7 @@ SetBs:		dw 0
 word_02A4:	dw 0
 		db 0
 		db 0
-VarPtr:		dw 0			; Points to a var in the symbol	table
+pVar:		dw 0			; Points to a var in the symbol	table
 		db 0,0,0,0,0,0
 word_02B0:	dw 0
 word_02B2:	dw 0
@@ -130,7 +130,7 @@ word_02C8:	dw 0
 word_02CC:	dw 0
 		dw 0
 word_02D0:	dw 0
-pFCBAddr:	dw 0
+pFCBAddr:	dw 0			; Pointer to FCB address
 word_02D4:	dw 0
 word_02D6:	dw 0
 pDevice:	dw 0
@@ -140,7 +140,7 @@ word_02DE:	dw 0
 word_02E0:	dw 0
 word_02E2:	dw 0
 word_02E4:	dw 0
-pFRWBuffer:	dw 0
+pFRWBuffer:	dw 0			; Pointer to file R/W buffer
 pGLBBuffer1:	dw 0
 		dw 0
 pGLbBuffer2:	dw 0
@@ -227,7 +227,7 @@ bIsGlbOpen:	db 0
 STCnt:		db 0
 NameLen:	db 0			; Length of the	current	variable name
 StrLen:		db 0			; Length of the	current	string (plus 1)
-tmpChar:	db 0
+tmpChar1:	db 0
 		db 0
 Count:		db 0
 WarmBoot:	db 0
@@ -262,7 +262,7 @@ I6:		db 0
 		db 0
 byte_04C3:	db 0
 II:		db 0
-tmpChr:		db 0
+tmpChar2:	db 0
 ITX:		db 0
 N:		db 0
 		db 0
@@ -278,7 +278,7 @@ NR:		db 0
 bmFlag1:	db 0			; b2:Routine not saved
 byte_04D3:	db 0
 		db 0,0,0,0,0
-Drive:		db 0
+Drive:		db 0			; Current disk drive
 byte_04DA:	db 0
 DeviceInUse:	db 0
 		db 0
@@ -354,113 +354,113 @@ Start:
 		ld	(pSymStack), hl	; Symbol stack
 		ld	de, 1000
 		add	hl, de		; HL <-	RandomSeed+1000
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pPlus1000), hl
 		ld	(hl), 43
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, 13
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_A632), hl	; AA91
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (word_A632)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
 		ld	(hl), 71
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pIndex), hl
 		ld	(word_A634), hl
 		ld	de, Nil
 		call	sub_980E	; AA96 <- Nil
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 3
 		add	hl, de
 		ld	(hl), 0
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (pIndex)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (pIndex)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
 		ld	(hl), 43
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (PartSize)	; Default partition size
 		ld	de, 23
 		add	hl, de
 		ld	(pIndex), hl
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_A626), hl
 		ld	(word_9F96), hl
 		ld	(pRtnName), hl	; Pointer to the loaded	routine	name
 		ld	(hl), 0
 		ld	de, 11
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (word_A626)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (word_A626)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_9F98), hl
 		ld	(word_9F9A), hl
 		ld	(pStartOfRtn), hl ; Pointer to the start of the	loaded routine
@@ -469,22 +469,22 @@ Start:
 		ld	(hl), 26
 		ld	de, (PartSize)	; Default partition size
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pSymbolTbl), hl ; Pointer to the symbol table
 		ld	de, 0
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pEnd),	hl
 		ld	de, 5
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
 		ld	(hl), 0
@@ -495,36 +495,36 @@ Start:
 		inc	hl
 		ld	(hl), 43
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_A628), hl
 		ld	(word_A62A), hl
 		ld	(hl), 45
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, 0
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pIndex), hl
 		ld	de, 4
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, 0
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
 		ld	(hl), 45
 		inc	hl
 		ld	(hl), 43
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ex	de, hl
 		ld	hl, (pIndex)
 		ld	(hl), e
@@ -534,17 +534,17 @@ Start:
 		ld	de, 2
 		add	hl, de
 		ld	(pIndex), hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ex	de, hl
 		ld	hl, (pIndex)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(pIndex), hl
 		ld	(hl), 45
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (BDOS+1)	; Gets BDOS address
 		ld	(bBDOSaddr), hl	; Address of the BDOS entry point
 		or	a
@@ -558,27 +558,27 @@ Start:
 		sbc	hl, de
 		ld	(bBDOSaddr), hl	; Address of the BDOS entry point
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (word_A628)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (word_A628)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
@@ -597,7 +597,7 @@ Start:
 		ld	a, (Result)
 		cp	0
 		jp	z, Greet
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	3
 		jp	nz, Greet
 		xor	a
@@ -607,7 +607,7 @@ Greet:					; Runs a pre-defined command line when loading
 		cp	1
 		jp	z, NoGreet
 		ld	hl, sGreet
-		call	putStr		; Output 0x00 terminated string	pointed	by HL
+		call	putStr		; Outputs 0x00 terminated string pointed by HL
 		call	putCrLf		; Outputs a CrLf
 NoGreet:
 		ld	hl, 0
@@ -615,7 +615,7 @@ NoGreet:
 		ld	hl, 0
 		ld	(word_A624), hl
 		ld	hl, 0
-		ld	(SymEnd), hl
+		ld	(SymCount), hl	; Number of symbols defined
 		xor	a
 		ld	(bmFlag1), a	; b2:Routine not saved
 		ld	(bIsGlbOpen), a
@@ -798,7 +798,7 @@ Input3:					; Outputs a CrLf
 Input4:
 		call	sub_9998
 		call	putCrLf		; Outputs a CrLf
-		ld	a, (CmdLineSz)
+		ld	a, (CmdLineSz)	; Size of the command line
 		or	a
 		jp	z, Input2
 		ld	hl, 0
@@ -837,7 +837,7 @@ Input8:
 		ld	(pStkPos), hl
 		ld	(pCurRtnLine), hl ; Pointer to current routine line
 		xor	a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 Input9:
 		ld	hl, (pStkPos)
 		ld	a, (hl)
@@ -851,7 +851,7 @@ Input9:
 		jp	z, Error00	; Missing linestart character
 		inc	hl
 		ld	(pStkPos), hl
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
 		jp	Input9
 Input10:
@@ -867,22 +867,22 @@ Input10:
 		ld	a, (hl)
 		cp	0Dh
 		jp	z, Input7
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, Input12
 		cp	8
 		jp	c, Input11
 		ld	a, 8
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 Input11:
 		ld	hl, byte_A668
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(hl), a
 		inc	hl
-		ld	(tmpPtr), hl
-		ld	de, (tmpPtr)
+		ld	(pTmp1), hl
+		ld	de, (pTmp1)
 		ld	hl, (pStkStart)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		ld	de, ibcdUnk07
 		ld	hl, ibcdV0
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
@@ -909,27 +909,27 @@ Input13:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		cpl
 		ld	c, a
 		ld	b, 255
 		inc	bc
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
-Input14:
+Input14:				; Size of the command line
 		ld	a, (CmdLineSz)
 		cp	255
 		jp	z, Error11	; String too long
-		ld	hl, CmdLineSz
+		ld	hl, CmdLineSz	; Size of the command line
 		inc	(hl)
 		ld	(pStkStart), ix
 		ld	hl, (pStkStart)
 		ld	(pStkPos), hl
 		ld	hl, (word_02B0)
-		ld	a, (CmdLineSz)
+		ld	a, (CmdLineSz)	; Size of the command line
 		call	sub_97B3
 		ld	(word_02B0), hl
-		ld	a, (CmdLineSz)
+		ld	a, (CmdLineSz)	; Size of the command line
 		ld	(ix+0),	a
 		inc	ix
 		ld	(ix+0),	3
@@ -3574,7 +3574,7 @@ evHorolog:
 		or	a
 		jp	nz, fFinish
 		call	GetCurTime	; Returns nothing as this is CP/M
-		ld	hl, ibcdDay
+		ld	hl, ibcdDay	; Day in BCD
 		call	CharToStr	; Convert char (0-255) to string and push it
 		dec	ix
 		dec	ix
@@ -3605,7 +3605,7 @@ evHorolog:
 ; Entry	point of $IO variable
 evIo:
 		ld	a, (IODevice)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		jp	PushInt
 ; End of function evIo
 ; =============== S U B	R O U T	I N E =======================================
@@ -3636,7 +3636,7 @@ evTest:
 		ld	a, (IfSW)
 		cp	2
 		jp	z, Error03	; Undefined local variable
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		jp	PushInt
 ; End of function evTest
 ; =============== S U B	R O U T	I N E =======================================
@@ -3756,9 +3756,9 @@ evzGlobal:
 		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
-		ld	a, (GlobalsDR)
+		ld	a, (GlobalsDR)	; Default drive	for globals
 		add	a, 41h		; 'A'
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	(ix+0),	a
 		inc	ix
 		ld	(ix+0),	1
@@ -3773,9 +3773,9 @@ evzRoutine:
 		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
-		ld	a, (RoutinesDR)
+		ld	a, (RoutinesDR)	; Default drive	for routines
 		add	a, 41h		; 'A'
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	(ix+0),	a
 		inc	ix
 		ld	(ix+0),	1
@@ -3798,7 +3798,7 @@ PushInt:
 		ld	a, (bmActFL)
 		or	a
 		jp	nz, fFinish
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		call	IntToStr	; Convert integer to string and	push it
 ; End of function PushInt
 ; =============== S U B	R O U T	I N E =======================================
@@ -4091,7 +4091,7 @@ UnaryOp:
 		jp	nz, UnaryOp1
 		dec	ix		; Get unary operator count
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 UnaryOp1:
 		ld	a, (Token)
 		cp	4		; Is it	'''?
@@ -4107,7 +4107,7 @@ UnaryOp1:
 		ld	(ix+0),	a
 		inc	ix
 UnaryOp2:				; Increment count
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 		jp	UnaryOp1
@@ -4115,7 +4115,7 @@ UnaryOp3:
 		ld	a, (bmActFL)
 		or	a
 		jp	nz, UnaryOpEnd
-		ld	a, (tmpChr)	; Save count
+		ld	a, (tmpChar2)	; Save count
 		ld	(ix+0),	a
 		inc	ix
 UnaryOpEnd:
@@ -4125,7 +4125,7 @@ UnaryOpEnd:
 sub_2129:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, 1
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	a, 4
 		ld	(Case),	a
 		ld	a, (Token)
@@ -4137,12 +4137,12 @@ sub_2129:
 		jp	nz, loc_214D
 loc_2148:
 		ld	a, 2
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 loc_214D:
 		ld	a, (bmActFL)
 		or	a
 		jp	z, loc_2167
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		cp	2
 		jp	z, locret_2166
 		ld	a, 255
@@ -4158,19 +4158,19 @@ loc_2167:				; Does nothing
 		ld	a, (ix+0)
 		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	(N), a
-		ld	(tmpPtr), ix
+		ld	(pTmp1), ix
 		xor	a
 		ld	(I1), a
 loc_217F:
 		ld	a, (N)
 		or	a
 		jp	z, loc_21C5
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, N
 		dec	(hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		cp	0Dh
 		jp	z, Error24	; Illegal use of indirection
@@ -4225,13 +4225,13 @@ loc_2207:				; Pointer to the previous routine line
 		call	sub_97BE
 		ld	hl, (pStkPos)
 		call	sub_97BE
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(pStkPos), hl
 		ld	(pStkStart), hl
 		dec	hl
 		ld	(pStkPos), hl
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		cp	2
 		jp	z, loc_2242
 		ld	a, (Token)
@@ -4250,12 +4250,12 @@ loc_2242:				; Indirection flag
 		ld	a, (Mode)
 		ld	(ix+0),	a
 		inc	ix
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(IndFL), a	; Indirection flag
 		ld	a, 3
 		ld	(Mode),	a
 		ld	a, 3
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		sub	(hl)
 		ld	(Case),	a
 		ret
@@ -4269,7 +4269,7 @@ NumLit:
 		ld	a, 255		; Set digit count
 		ld	(I1), a
 		xor	a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	(I2), a		; Size of integer part
 		ld	(I3), a		; Size of decimal fraction
 		ld	a, (bmFlag1)	; b2:Routine not saved
@@ -4294,7 +4294,7 @@ NumLit1:
 		ld	(I2), a
 NumLit2:
 		ld	a, 1
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 NumLit3:
 		ld	(PtrX2), ix
 		ld	a, (Token)
@@ -4331,7 +4331,7 @@ NumLit5:				; Check	for integer literal
 		cp	FALSE
 		jp	z, NumLit8
 		ld	a, TRUE
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	a, (bmActFL)
 		or	a
 		jp	nz, NumLit9
@@ -4342,7 +4342,7 @@ NumLit5:				; Check	for integer literal
 NumLit6:				; Get rid of trailing zeros
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		cp	30h		; '0'
 		jp	nz, NumLit7
 		ld	hl, I3
@@ -4352,7 +4352,7 @@ NumLit6:				; Get rid of trailing zeros
 		jp	nz, NumLit6
 		jp	NumLit8
 NumLit7:				; Put last digit back
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		ld	(ix+0),	a
 		inc	ix
 		jp	NumLit9
@@ -4365,7 +4365,7 @@ NumLit9:
 		ld	a, (Signal1)
 		cp	1
 		jp	z, NumLit22
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		cp	TRUE
 		jp	nz, NumLitEnd
 		ld	hl, (pStkPos)	; Check	for exponent
@@ -4490,7 +4490,7 @@ NumLit17:
 		ld	de, (PtrX1)
 		ld	hl, (PtrX2)
 		ld	a, (I1)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		ld	hl, (PtrX1)
 		ld	a, (I1)
 		ld	c, a
@@ -4523,7 +4523,7 @@ NumLit19:
 		ex	de, hl
 		ld	hl, (PtrX2)
 		ld	a, (IXT)
-		call	CopyDn		; Copy A bytes from (DE)-(HL) down
+		call	CopyAdn		; Copy A bytes from (HL)->(DE) down
 		ld	(PtrX2), hl
 		ex	de, hl
 		ld	(PtrX1), hl
@@ -4540,7 +4540,7 @@ NumLit20:
 		ex	de, hl		; Shift	fraction over DP
 		ld	hl, (PtrX1)
 		ld	a, (I2)
-		call	ShiftUp		; Shifts the stack towards the top
+		call	ShiftUp		; Shifts the stack towards its top
 		ld	hl, (PtrX)
 		ld	(PtrX2), hl
 		ld	hl, I3
@@ -4557,7 +4557,7 @@ NumLit20:
 		ld	(PtrX2), hl
 		ex	de, hl
 		ld	a, (IXT)
-		call	ShiftUp		; Shifts the stack towards the top
+		call	ShiftUp		; Shifts the stack towards its top
 		ld	hl, (PtrX1)
 		ld	(hl), 2Eh	; '.'
 		inc	hl
@@ -4601,7 +4601,7 @@ NumLit24:
 		ld	(ix+0),	3
 		inc	ix
 NumLitEnd:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(Result), a
 		ret
 NumLitErr:				; b2:Routine not saved
@@ -4844,9 +4844,9 @@ sub_2723:
 		ld	a, (ix+0)
 		ld	(IOTemp1), a
 		call	sub_9789
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ld	(pIndex), ix
-		ld	de, (Ptr3)
+		ld	de, (pTmp4)
 		ld	hl, (pIndex)
 		or	a
 		sbc	hl, de
@@ -4855,7 +4855,7 @@ sub_2723:
 		ld	a, (hl)
 		ld	(Count), a
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		or	a
 		jp	nz, loc_2764
 		ld	hl, (pIndex)
@@ -4866,20 +4866,20 @@ loc_2764:
 		ld	a, (IOTemp1)
 		cp	1
 		jp	z, loc_277C
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
 		ld	a, (hl)
 		or	10000000b
 		ld	(hl), a
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_277C:
-		ld	bc, (Ptr3)
+		ld	bc, (pTmp4)
 		ld	hl, (pIndex)
 		ex	de, hl
-		ld	hl, (tmpPtr)
-		call	sub_971B
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp1)
+		call	CopyBCup	; Copy BC bytes	from (HL)->(DE)	up
+		ld	(pTmp1), hl
 		ex	de, hl
 		ld	(pIndex), hl
 		ld	ix, (pIndex)
@@ -4900,16 +4900,16 @@ ApplyUnOp:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(byte_04E7), a
-		ld	(Ptr2),	ix
-		ld	hl, (Ptr2)
+		ld	(pTmp3), ix
+		ld	hl, (pTmp3)
 		cpl
 		ld	c, a
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		dec	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ld	a, (hl)
 		ld	(ITX), a
 		or	a
@@ -4924,7 +4924,7 @@ ApplyUnOp:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(byte_04E7), a
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	a, (hl)
 		cp	Minus
 		jp	nz, loc_2802
@@ -4932,18 +4932,18 @@ ApplyUnOp:
 		ld	(byte_04E9), a
 		ld	hl, byte_04E7
 		dec	(hl)
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		inc	hl
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 loc_2802:
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		dec	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		xor	a
 		ld	(byte_04EA), a
 		ld	(Case),	a
 loc_2810:
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		ld	a, (hl)
 		ld	(N), a
 		cp	5
@@ -4975,37 +4975,37 @@ loc_284A:
 loc_2856:
 		ld	hl, ITX
 		dec	(hl)
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		dec	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ld	a, (ITX)
 		or	a
 		jp	nz, loc_2810
 		inc	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ld	a, (byte_04EA)
 		cp	1
 		jp	z, loc_289D
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	a, (hl)
 		cp	30h		; '0'
 		jp	z, loc_289D
 		ld	a, (byte_04E9)
 		or	a
 		jp	z, loc_288D
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		ld	(hl), Minus
 		inc	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 loc_288D:
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		ex	de, hl
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	a, (byte_04E7)
 		call	ShiftDn		; Shifts the stack towards its base
 		jp	loc_28CF
 loc_289D:
-		ld	ix, (Ptr3)
+		ld	ix, (pTmp4)
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, 1
 		ld	(byte_04E7), a
@@ -5060,13 +5060,13 @@ loc_2904:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	hl, ibcdTemp1
 		ld	a, (hl)
 		and	11110000b
 		jp	nz, loc_297E
 		ld	hl, ibcdTemp0
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		call	sub_9535
 		ld	de, ibcdTemp1
 		call	SCmp0		; Compares two strings (sets BC=INTLN*257 first)
@@ -5082,33 +5082,33 @@ loc_2904:
 		ld	a, (Result)
 		cp	0
 		jp	z, Error20	; Illegal expression
-		ld	(Ptr1),	ix
-		ld	hl, (Ptr1)
-		ld	a, (tmpChr)
+		ld	(pTmp2), ix
+		ld	hl, (pTmp2)
+		ld	a, (tmpChar2)
 		cpl
 		ld	c, a
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (N)
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ex	de, hl
-		ld	hl, (Ptr1)
-		ld	a, (tmpChr)
-		call	ShiftUp		; Shifts the stack towards the top
+		ld	hl, (pTmp2)
+		ld	a, (tmpChar2)
+		call	ShiftUp		; Shifts the stack towards its top
 		ld	hl, N
 		add	a, (hl)
-		ld	(tmpChr), a
-		ld	hl, (Ptr1)
+		ld	(tmpChar2), a
+		ld	hl, (pTmp2)
 		ld	b, Space
 		ld	a, (N)
 		call	FillHLB		; Fills	A bytes	pointed	by (hl)	with B
 loc_297E:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(ix+0),	a
 		inc	ix
 		ld	(ix+0),	3
@@ -5141,9 +5141,9 @@ loc_298D:
 sub_29C5:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_50FE
-		ld	hl, (tmpPtr)
-		ld	(Ptr2),	hl
-		ld	(Ptr3),	hl
+		ld	hl, (pTmp1)
+		ld	(pTmp3), hl
+		ld	(pTmp4), hl
 		ld	a, (hl)
 		ld	(GLB), a
 		dec	hl
@@ -5157,12 +5157,12 @@ sub_29C5:
 		ld	(IndFL), a	; Indirection flag
 		ld	bc, -(PTRLN)
 		add	hl, bc
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
@@ -5173,14 +5173,14 @@ sub_29C5:
 		jp	z, loc_2A18
 		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		inc	(hl)
-		ld	hl, (Ptr3)
-		ld	a, (tmpChr)
+		ld	hl, (pTmp4)
+		ld	a, (tmpChar2)
 		ld	(hl), a
 		jp	loc_2A1F
 loc_2A18:
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		inc	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 loc_2A1F:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		or	a
@@ -5189,26 +5189,26 @@ loc_2A1F:				; Length of the	current	string (plus 1)
 		cp	1
 		jp	nz, Error47	; Invalid subscript
 loc_2A2E:
-		ld	hl, (Ptr2)
-		ld	de, (Ptr1)
+		ld	hl, (pTmp3)
+		ld	de, (pTmp2)
 		or	a
 		sbc	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		inc	(hl)
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	(hl), a
 		inc	hl
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ex	de, hl
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		call	ShiftDn		; Shifts the stack towards its base
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		call	sub_97BE
 		ret
 ; End of function sub_29C5
@@ -5220,8 +5220,8 @@ bczSaveN:
 		call	sub_97A2
 		ld	hl, TRtnName	; Temp routine name storage
 		call	sub_97D5
-		ld	a, (RoutinesDR)
-		ld	(Drive), a
+		ld	a, (RoutinesDR)	; Default drive	for routines
+		ld	(Drive), a	; Current disk drive
 		ld	a, 1
 		ld	(FCBType), a	; 0:Global, 1:Routine, 2:File
 		call	FFirst		; Find first file
@@ -5248,10 +5248,10 @@ bczSaveN1:				; Save routine
 PrintCRLF:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, 0Dh
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
 		ld	a, 0Ah
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
 		ld	hl, (pDevX)
 		ld	de, ibcdV0
@@ -5267,31 +5267,31 @@ PrintCRLF:
 PrintFF:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, 0Dh
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
 		ld	a, (IODevice)
 		or	a
 		jp	nz, PrintFF2
 		ld	hl, ClrScrSize
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 PrintFF1:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		dec	(hl)
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	nz, PrintFF1
 		jp	PrintFF3
 PrintFF2:
 		ld	a, 0Ch
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
 PrintFF3:
 		ld	hl, (pDevX)
@@ -5321,7 +5321,7 @@ sub_2B1D:
 sub_2B35:
 		call	SSChk		; (todo) Remove	this
 		ld	hl, 0
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		call	sub_97BE
 		ret
 ; End of function sub_2B35
@@ -5359,7 +5359,7 @@ HSPC1:
 		ld	c, 5
 		call	DbcdHL		; Decrements by	1 the C	bytes long BCD pointed by (HL)
 		ld	a, Space
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
 		jp	HSPC1
 HSPCEnd:
@@ -5383,8 +5383,8 @@ bczSave:
 		or	a
 		jp	z, Error40	; Routine is unnamed
 		call	sub_97D5
-		ld	a, (RoutinesDR)
-		ld	(Drive), a
+		ld	a, (RoutinesDR)	; Default drive	for routines
+		ld	(Drive), a	; Current disk drive
 		ld	a, 1
 		ld	(FCBType), a	; 0:Global, 1:Routine, 2:File
 		call	FFirst		; Find first file
@@ -5438,7 +5438,7 @@ ExprToInt:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	ExprToNum	; Convert expression to	numeric	value
 		xor	a		; It's an integer
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		call	MkStr		; Make number into a string
 		ret
 ; End of function ExprToInt
@@ -5452,7 +5452,7 @@ Null1:
 ExprToNum:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, 1
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		call	MkStr		; Make number into a string
 		ret
 ; End of function ExprToNum
@@ -5503,13 +5503,13 @@ bfAscii1:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, N
 		dec	(hl)
-		ld	(tmpPtr), ix
-		ld	hl, (tmpPtr)
+		ld	(pTmp1), ix
+		ld	hl, (pTmp1)
 		ld	a, (N)
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		ld	(N), a
 		ld	a, (N)
@@ -5528,7 +5528,7 @@ bfAscii3:				; Length of the	current	string (plus 1)
 		inc	bc
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, Minus1
+		ld	hl, Minus1	; -1 in	M string format
 		call	sub_97D5
 		ret
 ; End of function bfAscii
@@ -5539,7 +5539,7 @@ ShowVars:
 		ld	hl, (pSymbolTbl) ; Pointer to the symbol table
 		ld	de, 2
 		add	hl, de
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -5547,47 +5547,47 @@ ShowVars:
 		or	a
 		sbc	hl, de
 		jp	z, ShowVarsE
-		ld	hl, (VarPtr)	; Points to a var in the symbol	table
+		ld	hl, (pVar)	; Points to a var in the symbol	table
 		ld	(word_02B0), hl
 		ld	de, 2
 		add	hl, de
 		ld	a, (hl)
 		ld	(byte_04CC), a
 		inc	hl
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	a, (hl)
 		ld	(StrLen), a	; Length of the	current	string (plus 1)
-		ld	(tmpChr), a
-		ld	hl, tmpChr
+		ld	(tmpChar2), a
+		ld	hl, tmpChar2
 		inc	(hl)
 ShowVars1:
 		ld	de, VarName
-		ld	hl, (VarPtr)	; Points to a var in the symbol	table
-		ld	a, (tmpChr)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
+		ld	hl, (pVar)	; Points to a var in the symbol	table
+		ld	a, (tmpChar2)
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		ld	a, (byte_04CC)
 		or	a
 		jp	nz, ShowVars2
 		ld	hl, (word_02B0)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
 		ld	de, 3
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, VarName
-		ld	(word_0274), hl
-		ld	hl, (tmpPtr)
+		ld	(pTmp5), hl
+		ld	hl, (pTmp1)
 		ex	de, hl
-		ld	hl, (word_0274)
-		call	sub_967C
+		ld	hl, (pTmp5)
+		call	cpMString	; Compare two M	Strings	pointed	by (DE)	and (HL)
 		jp	nz, ShowVars3
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		ex	de, hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 ShowVars2:
 		ld	(ix+0),	Asterisk
 		inc	ix
@@ -5596,12 +5596,12 @@ ShowVars3:
 		ld	(ix+0),	Space
 		inc	ix
 ShowVars4:				; Points to a var in the symbol	table
-		ld	hl, (VarPtr)
+		ld	hl, (pVar)
 		inc	hl
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		call	sub_97B3
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	a, 14
 		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		sub	(hl)
@@ -5629,7 +5629,7 @@ ShowVars5:
 		ld	(ix+0),	3
 		inc	ix
 		call	Write
-		ld	hl, (VarPtr)	; Points to a var in the symbol	table
+		ld	hl, (pVar)	; Points to a var in the symbol	table
 		call	sub_97D5
 		call	Write
 		ld	(ix+0),	Quotes
@@ -5651,13 +5651,13 @@ ShowVars7:
 		call	sub_67BD
 ShowVars8:
 		ld	hl, (word_02B0)
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (VarPtr)	; Points to a var in the symbol	table
+		ld	hl, (pVar)	; Points to a var in the symbol	table
 		add	hl, de
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -5666,30 +5666,30 @@ ShowVars8:
 		sbc	hl, de
 		jp	z, ShowVarsE
 		ld	hl, VarName
-		ld	(word_0274), hl
-		ld	hl, (VarPtr)	; Points to a var in the symbol	table
+		ld	(pTmp5), hl
+		ld	hl, (pVar)	; Points to a var in the symbol	table
 		ld	(word_02B0), hl
 		ld	de, 2
 		add	hl, de
 		ld	a, (hl)
 		ld	(byte_04CC), a
 		inc	hl
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	a, (hl)
 		ld	(StrLen), a	; Length of the	current	string (plus 1)
-		ld	(tmpChr), a
-		ld	hl, tmpChr
+		ld	(tmpChar2), a
+		ld	hl, tmpChar2
 		inc	(hl)
-		ld	hl, (word_0274)
+		ld	hl, (pTmp5)
 		ex	de, hl
-		ld	hl, (VarPtr)	; Points to a var in the symbol	table
-		ld	a, (tmpChr)
+		ld	hl, (pVar)	; Points to a var in the symbol	table
+		ld	a, (tmpChar2)
 		ld	c, a
-		call	JSE		; Compare C bytes long strings pointed by (DE) and (HL)
+		call	cpCStr		; Compare C bytes long strings pointed by (DE) and (HL)
 		jr	nz, ShowVars9
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ex	de, hl
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		jp	ShowVars7
 ShowVars9:
 		jp	ShowVars1
@@ -5702,11 +5702,11 @@ bfData:
 		call	SSChk		; Check	for room on the	syntax stack
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		call	sub_50CC
 		xor	a
 		ld	(II), a
-		ld	a, (tmpChr)	; Global or Local
+		ld	a, (tmpChar2)	; Global or Local
 		cp	1
 		jp	nz, loc_2E87
 		call	sub_6A99
@@ -5715,13 +5715,13 @@ bfData:
 		jp	z, loc_2E5F
 		ld	a, 1
 		ld	(II), a
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_2E5F:
 		call	sub_6A25
 		ld	a, (Result)
@@ -5752,11 +5752,11 @@ loc_2E87:
 		jp	z, loc_2EB3
 		ld	a, 1
 		ld	(II), a
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	c, (hl)
 		ld	b, 0
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, 0
 		ld	(Result), a
 loc_2EB3:
@@ -5768,10 +5768,10 @@ loc_2EB3:
 		ld	(I5), a
 		ld	hl, (word_A640)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		call	sub_96C0
 		ld	(I5), a
-		ld	(word_027E), hl
+		ld	(pTmp10), hl
 		jp	loc_2E6A
 ; End of function bfData
 ; =============== S U B	R O U T	I N E =======================================
@@ -5809,7 +5809,7 @@ bcView3:
 		cp	3
 		jp	nz, bcView4
 		ld	hl, mmpFCB	; FCB for listing *.MMP	(view 3)
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		call	ShowFiles
 		jp	cbViewE
 bcView4:
@@ -5817,7 +5817,7 @@ bcView4:
 		cp	4
 		jp	nz, Error30	; Unimplemented	operation
 		ld	hl, fileFCB	; FCB for listing *.* (view 4)
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		call	ShowFiles
 cbViewE:
 		ret
@@ -5858,7 +5858,7 @@ bfExtract3:
 		inc	bc
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	(tmpPtr), ix
+		ld	(pTmp1), ix
 		ld	hl, ibcdUnk02
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		call	sub_9535
@@ -5904,16 +5904,16 @@ bfExtract6:
 		ld	a, (I2)
 		sub	(hl)
 		ld	(I2), a
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (I1)
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(TPP), ix
 		ld	hl, (TPP)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (I2)
 		call	ShiftDn		; Shifts the stack towards its base
 bfExtractEnd:
@@ -5966,7 +5966,7 @@ bfFind3:
 		inc	bc
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	(Ptr2),	ix
+		ld	(pTmp3), ix
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
@@ -5977,7 +5977,7 @@ bfFind3:
 		inc	bc
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	(Ptr1),	ix
+		ld	(pTmp2), ix
 		ld	a, (I2)
 		or	a
 		jp	z, bfFindEnd
@@ -5987,23 +5987,23 @@ bfFind3:
 		jp	c, bfFind5
 		ld	hl, N
 		dec	(hl)
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (N)
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (I1)
 		ld	hl, N
 		sub	(hl)
 		ld	(I1), a
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	b, a
 		ld	a, (I2)
 		call	sub_95A6
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	(I3), a
 		ld	a, (Result)
 		cp	0
@@ -6079,7 +6079,7 @@ bfLength2:
 		inc	bc
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	(Ptr2),	ix
+		ld	(pTmp3), ix
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
@@ -6090,21 +6090,21 @@ bfLength2:
 		inc	bc
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	(Ptr1),	ix
+		ld	(pTmp2), ix
 		xor	a
 		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	a, (I2)
 		or	a
 		jp	z, bfLength1
 bfLength3:
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (I1)
 		ld	b, a
 		ld	a, (I2)
 		call	sub_95A6
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	(I3), a
 		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		inc	(hl)
@@ -6125,10 +6125,10 @@ sub_31CA:
 		and	(hl)
 		ld	(hl), a
 		call	sub_50FE
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(I6), a
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		cp	32h		; '2'
 		jp	c, loc_31F5
 		ld	hl, bmFlag1	; b2:Routine not saved
@@ -6152,11 +6152,11 @@ loc_3207:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(I2), a
-		ld	hl, (Ptr2)
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp3)
+		ld	(pTmp2), hl
 		inc	hl
-		ld	(Ptr2),	hl
-		ld	hl, (Ptr1)
+		ld	(pTmp3), hl
+		ld	hl, (pTmp2)
 		dec	hl
 		dec	hl
 		ld	a, (hl)
@@ -6166,12 +6166,12 @@ loc_3207:
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, 0Eh
 		ld	hl, I6
 		cp	(hl)
 		jp	c, loc_3273
-		ld	ix, (Ptr1)
+		ld	ix, (pTmp2)
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_8B6A
 		ret
@@ -6181,7 +6181,7 @@ loc_3241:				; b2:Routine not saved
 		jp	nz, loc_3259
 loc_3249:				; '1'
 		ld	a, 31h
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		jp	loc_325E
 loc_3251:				; b2:Routine not saved
 		ld	a, (bmFlag1)
@@ -6189,9 +6189,9 @@ loc_3251:				; b2:Routine not saved
 		jp	nz, loc_3249
 loc_3259:				; '0'
 		ld	a, 30h
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 loc_325E:
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		ld	(ix+0),	a
 		inc	ix
 		ld	(ix+0),	1
@@ -6203,18 +6203,18 @@ loc_3273:
 		ld	a, (I6)
 		cp	12h
 		jp	z, loc_32ED
-		ld	ix, (Ptr1)
+		ld	ix, (pTmp2)
 		call	SSChk		; Check	for room on the	syntax stack
 		cp	0Fh
 		jp	nz, loc_32A9
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (I1)
 		ld	b, a
 		ld	a, (I2)
 		call	sub_95A6
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	(I3), a
 		ld	a, (Result)
 		cp	0
@@ -6224,9 +6224,9 @@ loc_32A9:
 		ld	a, (I6)
 		cp	10h
 		jp	nz, loc_32C9
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (I2)
 		ld	c, a
 		ld	a, (I1)
@@ -6239,15 +6239,15 @@ loc_32C9:
 		ld	hl, I2
 		cp	(hl)
 		jp	nz, loc_3251
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ex	de, hl
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	c, a
-		call	JSE		; Compare C bytes long strings pointed by (DE) and (HL)
+		call	cpCStr		; Compare C bytes long strings pointed by (DE) and (HL)
 		jr	nz, loc_32EA
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ex	de, hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		jp	loc_3241
 loc_32EA:
 		jp	loc_3251
@@ -6268,12 +6268,12 @@ loc_32ED:
 		ld	a, (Result)
 		cp	0
 		jp	z, Error11	; String too long
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	bc, 0FFFDh
 		add	hl, bc
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	a, (I2)
 		call	ShiftDn		; Shifts the stack towards its base
 		ld	a, (N)
@@ -6286,14 +6286,14 @@ loc_32ED:
 ; =============== S U B	R O U T	I N E =======================================
 sub_333B:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (RoutinesDR)
+		ld	a, (RoutinesDR)	; Default drive	for routines
 		add	a, 41h		; 'A'
 		ld	(RDrLetter), a
 		ld	hl, sRoutinesOn
 		call	sub_97D5
 		call	Write
 		call	PrintCRLF
-		ld	a, (GlobalsDR)
+		ld	a, (GlobalsDR)	; Default drive	for globals
 		add	a, 41h		; 'A'
 		ld	(GDrLetter), a
 		ld	hl, sGlobalsOn
@@ -6317,7 +6317,7 @@ loc_3379:
 		ld	de, (word_050E)
 		ld	hl, (word_050C)
 		ld	a, (byte_0546)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		ld	a, (byte_0546)
 		ld	c, a
 		ld	b, 0
@@ -6367,20 +6367,20 @@ sub_33D6:
 		jp	nz, Error18	; Illegal character
 		ld	a, 1
 		ld	(STCnt), a
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	bc, 0FFFEh
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(pIndex), hl
 		ld	de, (pIndex)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		or	a
 		sbc	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(SetBs), hl
 loc_3412:
 		ld	hl, (word_A049)
@@ -6394,8 +6394,8 @@ loc_3412:
 		jp	z, loc_3689
 		xor	a
 		ld	(NR), a
-		ld	(tmpPtr), ix
-		ld	hl, (tmpPtr)
+		ld	(pTmp1), ix
+		ld	hl, (pTmp1)
 		dec	hl
 		dec	hl
 		ld	a, (hl)
@@ -6405,10 +6405,10 @@ loc_3412:
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_02F4), hl
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (byte_A6A4)
 		cp	1
 		jp	nz, loc_351A
@@ -6448,21 +6448,21 @@ loc_3412:
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ex	de, hl
 		ld	hl, (word_050A)
 		ld	a, (byte_0547)
-		call	ShiftUp		; Shifts the stack towards the top
+		call	ShiftUp		; Shifts the stack towards its top
 		ld	de, (word_050C)
 		ld	hl, (word_02F4)
 		ld	a, (byte_A694)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		jp	loc_3502
 loc_34C7:
 		ld	de, (word_050C)
 		ld	hl, (word_02F4)
 		ld	a, (byte_A694)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		ld	hl, (word_050C)
 		ld	a, (byte_A694)
 		ld	c, a
@@ -6497,18 +6497,18 @@ loc_351A:
 		ld	a, (STCnt)
 		or	a
 		jp	nz, loc_3528
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(STCnt), a
 loc_3528:
 		ld	hl, (SetBs)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_352E:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(byte_04CC), a
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_02F2), hl
 		ld	a, (hl)
 		ld	(NameLen), a	; Length of the	current	variable name
@@ -6523,26 +6523,26 @@ loc_352E:
 		ld	a, 01111111b
 		and	(hl)
 		ld	(hl), a
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (NameLen)	; Length of the	current	variable name
 		ld	(hl), a
 loc_355F:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	c, (hl)
 		ld	b, 0
 		add	hl, bc
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_A640), hl
 		ld	a, (byte_04CC)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	a, 3
 		ld	(byte_A695), a
 loc_3578:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, loc_35A9
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(I4), a
 		ld	a, (byte_A695)
@@ -6551,18 +6551,18 @@ loc_3578:
 		ld	(byte_A695), a
 		ld	hl, byte_A695
 		inc	(hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (I4)
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
 		inc	hl
-		ld	(tmpPtr), hl
-		ld	hl, tmpChr
+		ld	(pTmp1), hl
+		ld	hl, tmpChar2
 		dec	(hl)
 		jp	loc_3578
 loc_35A9:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(word_029A), hl
 		ld	a, (I1)
 		cp	1
@@ -6580,8 +6580,8 @@ loc_35A9:
 		ld	a, (Result)
 		cp	0
 		jp	z, loc_35ED
-		ld	hl, (VarPtr)	; Points to a var in the symbol	table
-		ld	(Ptr1),	hl
+		ld	hl, (pVar)	; Points to a var in the symbol	table
+		ld	(pTmp2), hl
 		ld	a, (byte_A694)
 		cp	(hl)
 		jp	nz, loc_35EA
@@ -6595,7 +6595,7 @@ loc_35F0:
 		ld	hl, STCnt
 		dec	(hl)
 		ld	hl, (word_029A)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (STCnt)
 		or	a
 		jp	nz, loc_352E
@@ -6642,7 +6642,7 @@ loc_3657:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(StrLen), a	; Length of the	current	string (plus 1)
-		ld	a, 1Eh
+		ld	a, 30
 		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		cp	(hl)
 		jp	c, Error20	; Illegal expression
@@ -6665,13 +6665,13 @@ loc_3689:
 		call	StrToInt	; Converts string on ToS to integer
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		dec	ix
 		ld	a, 1
 		ld	hl, IODevice
 		cp	(hl)
 		jp	c, loc_3684
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		cp	59h		; 'Y'
 		jp	z, loc_36B6
 		ld	hl, (pDevX)
@@ -6691,28 +6691,28 @@ bcBreak:
 		ld	a, (Case)
 		cp	1
 		jp	nz, bcBreak2
-		ld	(tmpPtr), ix
-		ld	hl, (tmpPtr)
+		ld	(pTmp1), ix
+		ld	hl, (pTmp1)
 		dec	hl
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		cp	1
 		jp	nz, bcBreak2
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		cp	30h		; '0'
 		jp	z, bcBreak1
 		cp	31h		; '1'
 		jp	nz, bcBreak2
 bcBreak1:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		sub	30h		; '0'
 		ld	(bBreakVal), a	; Value	passed to BREAK	command
-		ld	ix, (tmpPtr)
+		ld	ix, (pTmp1)
 		call	SSChk		; Check	for room on the	syntax stack
 		jp	bcBreakEnd
 bcBreak2:
@@ -6721,7 +6721,7 @@ bcBreak2:
 		jp	z, bcBreakEnd
 		call	putCrLf		; Outputs a CrLf
 		ld	hl, sBreak
-		call	putStr		; Output 0x00 terminated string	pointed	by HL
+		call	putStr		; Outputs 0x00 terminated string pointed by HL
 		xor	a
 		ld	(DeviceInUse), a
 		call	sub_574A
@@ -6749,7 +6749,7 @@ bczGo:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		cpl
 		ld	c, a
 		ld	b, 255
@@ -6802,7 +6802,7 @@ bfNxtOrd:
 		call	SSChk		; Check	for room on the	syntax stack
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		call	sub_50CC
 		ld	a, (byte_04CC)
 		or	a
@@ -6814,26 +6814,26 @@ bfNxtOrd:
 		ld	b, 0
 		add	hl, bc
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_37DC:
 		ld	a, (I1)
 		cp	1
 		jp	z, loc_37F6
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	c, (hl)
 		ld	b, 0
 		add	hl, bc
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, I1
 		dec	(hl)
 		jp	loc_37DC
 loc_37F6:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	(hl)
 		ld	(ix+0),	0
 		inc	ix
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		cp	1
 		jp	nz, loc_3873
 		call	sub_6A99
@@ -6850,7 +6850,7 @@ loc_381F:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_5861
 loc_3829:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(ix+0),	a
 		inc	ix
 		ld	(ix+0),	3
@@ -6867,21 +6867,21 @@ loc_3838:
 		ld	(ix+0),	31h	; '1'
 		inc	ix
 		ld	a, 2
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		jp	loc_3829
 loc_385B:
 		xor	a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		jp	loc_3829
 ; ----------
-		ld	hl, (VarPtr)	; (todo) Check this
+		ld	hl, (pVar)	; (todo) Check this
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	de, 9
 		add	hl, de
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		jp	loc_37DC
 loc_3873:
 		call	sub_70A8
@@ -6890,7 +6890,7 @@ loc_3873:
 		cp	0
 		jp	z, loc_3838
 		call	sub_6CE3
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -6902,8 +6902,8 @@ loc_3873:
 		ld	hl, I5
 		cp	(hl)
 		jp	c, loc_3838
-		ld	hl, (word_027E)
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	hl, (pTmp10)
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		jp	loc_381F
 loc_38A5:
 		call	sub_71EA
@@ -6912,11 +6912,11 @@ loc_38A5:
 		jp	z, loc_3838
 		ld	hl, (word_A640)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (byte_04CC)
 		call	sub_96C0
 		ld	(byte_04CC), a
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	a, 1
 		ld	hl, byte_04CC
 		cp	(hl)
@@ -6927,7 +6927,7 @@ loc_38A5:
 sub_38CF:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (Vptr)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, 2
 		add	hl, de
 		ld	(word_02C8), hl
@@ -6956,7 +6956,7 @@ bfRandom:
 WriteAst:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	StrToChar	; Converts a string on ToS to char (0-255)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	(ix+0),	a
 		inc	ix
 		ld	(ix+0),	1
@@ -6979,22 +6979,22 @@ Write:
 		inc	bc
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	(tmpPtr), ix
+		ld	(pTmp1), ix
 		ld	a, (Count)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 Write1:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, Write2
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		dec	(hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		jp	Write1
 Write2:
 		ld	hl, ibcdTemp0
@@ -7099,7 +7099,7 @@ KillAll:
 		inc	hl
 		ld	(hl), d
 		ld	hl, 0
-		ld	(SymEnd), hl
+		ld	(SymCount), hl	; Number of symbols defined
 		ret
 ; End of function KillAll
 ; =============== S U B	R O U T	I N E =======================================
@@ -7134,20 +7134,20 @@ loc_3A2C:
 loc_3A49:
 		ld	a, 1
 		ld	(KillFL), a
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (hl)
 		or	10000000b
 		ld	(hl), a
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -7178,9 +7178,9 @@ loc_3A96:				; Pointer to the symbol	table
 		ld	hl, (pSymbolTbl)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_3AA0:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -7188,27 +7188,27 @@ loc_3AA0:
 		or	a
 		sbc	hl, de
 		jp	z, loc_3ADC
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (hl)
 		and	10000000b
 		jp	nz, loc_3AC5
 		call	sub_6B28
 		jp	loc_3AA0
 loc_3AC5:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, 01111111b
 		and	(hl)
 		ld	(hl), a
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		jp	loc_3AA0
 loc_3ADC:
 		call	sub_6A53
@@ -7231,22 +7231,22 @@ sub_3AEA:
 		cp	1
 		jp	nz, loc_3B72
 		call	sub_6A99
-		ld	hl, (tmpPtr)
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp1)
+		ld	(pTmp2), hl
 		ld	a, (Result)
 		cp	0
 		jp	z, loc_3B25
-loc_3B11:
-		ld	hl, (SymEnd)
+loc_3B11:				; Number of symbols defined
+		ld	hl, (SymCount)
 		dec	hl
-		ld	(SymEnd), hl
-		ld	hl, (tmpPtr)
+		ld	(SymCount), hl	; Number of symbols defined
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_3B25:
 		call	sub_6A25
 		ld	a, (Result)
@@ -7256,20 +7256,20 @@ loc_3B25:
 		or	a
 		jp	z, loc_3B11
 loc_3B37:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		dec	hl
-		ld	(tmpPtr), hl
-		ld	hl, (Ptr1)
+		ld	(pTmp1), hl
+		ld	hl, (pTmp2)
 		dec	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	bc, (pSymbolTbl) ; Pointer to the symbol table
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		call	sub_972F
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pSymbolTbl), hl ; Pointer to the symbol table
 		call	sub_6A53
 		ld	hl, (pIndex)
@@ -7286,7 +7286,7 @@ loc_3B72:
 		call	sub_7974
 		ld	hl, glbptrUnk
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_3B6A
 		call	sub_70A8
 		ld	(word_02B2), ix
@@ -7341,13 +7341,13 @@ loc_3BE4:
 		ld	hl, ibcdVmin1
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
 loc_3BFE:
-		ld	(tmpPtr), ix
-		ld	hl, (tmpPtr)
+		ld	(pTmp1), ix
+		ld	hl, (pTmp1)
 		dec	hl
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		call	sub_569A
 		ld	hl, byte_A699
 		dec	(hl)
@@ -7358,7 +7358,7 @@ loc_3BFE:
 loc_3C20:
 		ld	a, (DeviceInUse)
 		ld	(IODevice), a
-		ld	ix, (word_0276)
+		ld	ix, (pTmp6)
 		call	SSChk		; Check	for room on the	syntax stack
 		ret
 ; End of function sub_3BAC
@@ -7373,7 +7373,7 @@ sub_3C2E:
 		or	a
 		jp	nz, loc_3C4F
 loc_3C42:
-		ld	(word_0274), ix
+		ld	(pTmp5), ix
 		ld	hl, ibcdVmin1
 		call	CharToStr	; Convert char (0-255) to string and push it
 		jp	loc_3CB9
@@ -7421,15 +7421,15 @@ loc_3C9D:
 		or	00001000b
 		ld	(hl), a
 loc_3CA7:
-		ld	(word_0274), ix
-		ld	a, (tmpChar)
+		ld	(pTmp5), ix
+		ld	a, (tmpChar1)
 		call	IntToStr	; Convert integer to string and	push it
 		ld	hl, (pDevX)
 		ld	c, 5
 		call	IbcdHL		; Increments by	1 the C	bytes long BCD pointed by (HL)
 loc_3CB9:
-		ld	hl, (word_0274)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp5)
+		ld	(pTmp1), hl
 		ld	a, 1
 		ld	(byte_04B3), a
 		call	sub_33D6
@@ -7446,7 +7446,7 @@ sub_3CCC:
 ; =============== S U B	R O U T	I N E =======================================
 sub_3CD3:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	(word_0274), ix
+		ld	(pTmp5), ix
 		ld	hl, (word_02D6)
 		ld	a, (hl)
 		cp	1
@@ -7483,7 +7483,7 @@ loc_3D19:
 		ld	(hl), a
 loc_3D21:
 		call	sub_5112
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	0Dh
 		jp	z, loc_3D71
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
@@ -7491,14 +7491,14 @@ loc_3D21:
 		jp	z, Error11	; String too long
 		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		inc	(hl)
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		ld	(ix+0),	a
 		inc	ix
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	hl, byte_0545
 		cp	(hl)
 		jp	z, loc_3D71
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	1Ah
 		jp	nz, loc_3D21
 		ld	a, (IODevice)
@@ -7513,7 +7513,7 @@ loc_3D5D:				; Length of the	current	string (plus 1)
 		dec	(hl)
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 loc_3D71:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		ld	(ix+0),	a
@@ -7523,12 +7523,12 @@ loc_3D71:				; Length of the	current	string (plus 1)
 		ld	a, (IODevice)
 		or	a
 		jp	z, loc_3D99
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	1Ah
 		jp	z, loc_3D99
 loc_3D8E:
 		call	sub_5112
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	0Ah
 		jp	nz, loc_3D8E
 loc_3D99:
@@ -7544,8 +7544,8 @@ loc_3D99:
 		ld	c, 5
 		call	AbcdDEHL	; Adds two C bytes long	BCDs pointed by	(DE) and (HL)
 					; result goes in the BCD pointed by (HL)
-		ld	hl, (word_0274)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp5)
+		ld	(pTmp1), hl
 		ld	a, 1
 		ld	(byte_04B3), a
 		call	sub_33D6
@@ -7561,7 +7561,7 @@ ClrTRInfo:
 		call	SSChk		; Check	for room on the	syntax stack
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		or	a
 		jp	z, ClrTRInfo1
 		dec	ix
@@ -7575,7 +7575,7 @@ ClrTRInfo:
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
 ClrTRInfo1:				; Done
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		cp	1
 		jp	z, ClrTRInfoEnd
 		dec	ix
@@ -7595,7 +7595,7 @@ ClrTRInfo2:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		cpl
 		ld	c, a
 		ld	b, 255
@@ -7638,18 +7638,18 @@ loc_3E50:
 		or	a
 		jp	z, loc_3E78
 		pop	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		pop	hl
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		call	sub_47DD
 		call	sub_4839
 		pop	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		pop	hl
-		ld	(tmpPtr), hl
-		ld	hl, (Ptr2)
+		ld	(pTmp1), hl
+		ld	hl, (pTmp3)
 		push	hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		push	hl
 		jp	loc_3E50
 loc_3E78:				; Pointer to the previous routine line
@@ -7676,7 +7676,7 @@ loc_3E98:
 bcDo:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, byte_A65F	; (todo) Check this
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ex	de, hl
 		ld	hl, (pRtnName)	; Pointer to the loaded	routine	name
 		call	CopyHLDE	; Copy (HL) bytes from (HL) to (DE)
@@ -7685,7 +7685,7 @@ bcDo:
 		ld	hl, (pStartOfRtn) ; Pointer to the start of the	loaded routine
 		ld	(word_A62C), hl
 		ld	hl, byte_A671
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ex	de, hl
 		ld	hl, byte_A668
 		call	CopyHLDE	; Copy (HL) bytes from (HL) to (DE)
@@ -7782,12 +7782,12 @@ bcQuit2:
 		jp	bcQuit4
 bcQuit3:
 		pop	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 bcQuit4:
 		pop	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		pop	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		jp	bcQuitEnd
 bcQuit5:				; Runs a pre-defined command line when loading
 		ld	a, (AutoexecFlag)
@@ -7810,9 +7810,9 @@ sub_3FBA:
 		ld	hl, (pSymbolTbl) ; Pointer to the symbol table
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_3FCF:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -7820,20 +7820,20 @@ loc_3FCF:
 		or	a
 		sbc	hl, de
 		jp	z, locret_3FFC
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
 		ld	(pIndex), hl
 		ld	a, 01111111b
 		and	(hl)
 		ld	(hl), a
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		jp	loc_3FCF
 locret_3FFC:
 		ret
@@ -7855,7 +7855,7 @@ bcClose1:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(DeviceInUse), a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		call	sub_574A
 		ld	a, (DeviceInUse)
 		cp	2
@@ -7870,10 +7870,10 @@ bcClose1:
 		ld	d, (hl)
 		ex	de, hl
 		ld	a, (hl)
-		ld	(Drive), a
+		ld	(Drive), a	; Current disk drive
 		inc	hl
 		ld	(pIndex), hl
-		ld	(pFCBAddr), hl
+		ld	(pFCBAddr), hl	; Pointer to FCB address
 		ld	hl, (word_02D4)
 		ld	a, (hl)
 		and	00000010b
@@ -7886,7 +7886,7 @@ bcClose1:
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(hl), 1Ah
 bcClose2:
 		ld	hl, (word_02E0)
@@ -7894,8 +7894,8 @@ bcClose2:
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(pFRWBuffer), hl
-		call	FSeqWrite	; Sequential write file
+		ld	(pFRWBuffer), hl ; Pointer to file R/W buffer
+		call	FSeqWrite	; Sequential write file	(5 retries)
 bcClose3:
 		ld	a, (NumOfParams)
 		or	a
@@ -7948,26 +7948,26 @@ loc_40CA:
 		ld	a, (byte_A699)
 		or	a
 		jp	nz, loc_40EC
-		ld	a, (RoutinesDR)
+		ld	a, (RoutinesDR)	; Default drive	for routines
 		ld	(byte_04DA), a
 		jp	loc_416B
 loc_40EC:
-		ld	(tmpPtr), ix
-		ld	hl, (tmpPtr)
+		ld	(pTmp1), ix
+		ld	hl, (pTmp1)
 		dec	hl
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	a, (byte_A699)
 		cp	1
 		jp	nz, loc_4137
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		cp	1
 		jp	z, loc_4119
 		or	a
 		jp	nz, Error48	; Invalid parameter
-		ld	a, (RoutinesDR)
+		ld	a, (RoutinesDR)	; Default drive	for routines
 		ld	(byte_04DA), a
 		jp	loc_414E
 loc_4119:
@@ -7995,7 +7995,7 @@ loc_4148:
 		call	sub_569A
 		jp	loc_4155
 loc_414E:
-		ld	ix, (tmpPtr)
+		ld	ix, (pTmp1)
 		call	SSChk		; Check	for room on the	syntax stack
 loc_4155:
 		ld	hl, byte_A699
@@ -8004,26 +8004,26 @@ loc_4155:
 		or	a
 		jp	nz, loc_40EC
 		ld	hl, byte_A67A
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		or	a
 		jp	nz, loc_419E
 loc_416B:
 		ld	hl, sDev
 		ld	a, (hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		call	sub_97B3
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (DeviceInUse)
 		add	a, 30h		; '0'
 		ld	(I1), a
 		ld	(ix+0),	a
 		inc	ix
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(ix+0),	a
 		inc	ix
 		ld	(ix+0),	3
@@ -8044,7 +8044,7 @@ loc_41A4:
 		ld	a, 2
 		ld	(FCBType), a	; 0:Global, 1:Routine, 2:File
 		ld	a, (byte_04DA)
-		ld	(Drive), a
+		ld	(Drive), a	; Current disk drive
 		call	FFirst		; Find first file
 		ld	a, (Result)
 		cp	1
@@ -8067,7 +8067,7 @@ loc_41DE:
 		ld	a, (IODevice)
 		ld	(DeviceInUse), a
 		call	sub_574A
-		ld	ix, (word_0276)
+		ld	ix, (pTmp6)
 		call	SSChk		; Check	for room on the	syntax stack
 		ret
 ; End of function bcOpen
@@ -8083,7 +8083,7 @@ sub_41F6:
 ShowFiles:
 		call	SSChk		; Show a list of files
 		xor	a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	(byte_04EA), a
 		ld	(byte_A6A5), a
 		ld	a, 8
@@ -8095,8 +8095,8 @@ loc_4219:
 		ld	a, (Result)
 		cp	0
 		jp	z, loc_42B5
-		ld	hl, (tmpPtr)
-		ld	(word_027C), hl
+		ld	hl, (pTmp1)
+		ld	(pTmp9), hl
 		ld	a, (byte_04EA)
 		or	a
 		jp	z, loc_4242
@@ -8109,9 +8109,9 @@ loc_4219:
 loc_4242:
 		ld	a, 8
 		ld	(Count), a
-		ld	hl, (word_027C)
+		ld	hl, (pTmp9)
 		call	sub_97B3
-		ld	(word_027C), hl
+		ld	(pTmp9), hl
 		ld	a, 1
 		ld	(ITX), a
 		ld	a, (I1)
@@ -8132,9 +8132,9 @@ loc_4262:
 		jp	z, loc_4289
 		ld	a, 3
 		ld	(Count), a
-		ld	hl, (word_027C)
+		ld	hl, (pTmp9)
 		call	sub_97B3
-		ld	(word_027C), hl
+		ld	(pTmp9), hl
 loc_4289:
 		ld	(ix+0),	0Ch
 		inc	ix
@@ -8142,7 +8142,7 @@ loc_4289:
 		inc	ix
 		call	Write
 		ld	a, 1
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	hl, byte_04EA
 		inc	(hl)
 		ld	a, (byte_04EA)
@@ -8173,7 +8173,7 @@ sub_42C0:
 		or	a
 		jp	z, Error03	; Undefined local variable
 		ld	hl, byte_A69E
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		jp	loc_42FA
 loc_42E1:
 		ld	a, (ForFL)
@@ -8189,7 +8189,7 @@ loc_42FA:
 		ld	ix, (word_0502)
 		call	SSChk		; Check	for room on the	syntax stack
 loc_4301:				; Points to a var in the symbol	table
-		ld	hl, (VarPtr)
+		ld	hl, (pVar)
 		call	sub_97D5
 		xor	a
 		ld	(ForFL), a
@@ -8209,33 +8209,33 @@ sub_430C:
 loc_4324:
 		ld	hl, (pStkPos)
 		call	sub_97BE
-		ld	(tmpPtr), ix
-		ld	hl, (tmpPtr)
+		ld	(pTmp1), ix
+		ld	hl, (pTmp1)
 		ld	bc, 0FFFDh
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 loc_433C:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, loc_4358
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		dec	hl
 		dec	hl
 		ld	e, (hl)
 		ld	d, 0
 		or	a
 		sbc	hl, de
-		ld	(tmpPtr), hl
-		ld	hl, tmpChr
+		ld	(pTmp1), hl
+		ld	hl, tmpChar2
 		dec	(hl)
 		jp	loc_433C
 loc_4358:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	bc, 0FFFEh
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -8264,8 +8264,8 @@ sub_4380:
 		add	hl, de
 		ld	(pStkPos), hl
 loc_4399:
-		ld	(Ptr1),	ix
-		ld	hl, (Ptr1)
+		ld	(pTmp2), ix
+		ld	hl, (pTmp2)
 		dec	hl
 		dec	hl
 		dec	hl
@@ -8276,11 +8276,11 @@ loc_4399:
 		ld	b, 11111111b
 		inc	bc
 		add	hl, bc
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	(word_0502), ix
 		ld	hl, (word_0502)
-		ld	(Ptr2),	hl
-		ld	ix, (Ptr1)
+		ld	(pTmp3), hl
+		ld	ix, (pTmp2)
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	bc, 0FFFEh
 		add	ix, bc
@@ -8300,7 +8300,7 @@ loc_4399:
 		ld	(I6), a
 		call	sub_8B6A
 		ld	hl, (Vptr)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (word_0502)
 		ld	(word_02C8), hl
 		call	sub_33D6
@@ -8324,7 +8324,7 @@ bfTextO1:
 		ld	a, 1
 		ld	(DT), a
 		ld	hl, (pStartOfRtn) ; Pointer to the start of the	loaded routine
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	hl, ibcdTemp0
 		ld	c, 5		; (todo) INTLN
 		call	DbcdHL		; Decrements by	1 the C	bytes long BCD pointed by (HL)
@@ -8341,7 +8341,7 @@ sub_443E:
 		call	sub_50CC
 		ld	hl, (word_02F2)
 		dec	hl
-		ld	(word_0278), hl
+		ld	(pTmp7), hl
 		call	sub_70A8
 		xor	a
 		ld	(NR), a
@@ -8354,7 +8354,7 @@ loc_445D:
 		or	a
 		jp	z, Error07	; Undefined global name
 		ld	hl, byte_A69E
-		ld	(word_027E), hl
+		ld	(pTmp10), hl
 		ld	ix, (word_0502)
 		call	SSChk		; Check	for room on the	syntax stack
 		jp	loc_449B
@@ -8368,14 +8368,14 @@ loc_4482:
 		ld	a, (ForFL)
 		cp	1
 		jp	z, loc_4494
-		ld	ix, (word_0278)
+		ld	ix, (pTmp7)
 		call	SSChk		; Check	for room on the	syntax stack
 		jp	loc_449B
 loc_4494:
 		ld	ix, (word_0502)
 		call	SSChk		; Check	for room on the	syntax stack
 loc_449B:
-		ld	hl, (word_027E)
+		ld	hl, (pTmp10)
 		call	sub_97D5
 		xor	a
 		ld	(ForFL), a
@@ -8390,17 +8390,17 @@ sub_44A6:
 		ld	(byte_A69F), a
 		ld	(TPP), ix
 		ld	hl, (word_02FA)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		dec	hl
 		dec	hl
 		ld	(pStkPos), hl
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	e, (hl)
 		ld	d, 0
 		or	a
 		sbc	hl, de
 		ld	(pStkPos), hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		xor	a
 		ld	(Count), a
 		ld	de, ibcd1
@@ -8409,18 +8409,18 @@ sub_44A6:
 loc_44DF:
 		ld	hl, (pStkPos)
 		ex	de, hl
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		or	a
 		sbc	hl, de
 		jp	nz, loc_44F9
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ex	de, hl
 		ld	hl, (TPP)
 		or	a
 		sbc	hl, de
 		jp	z, loc_45F3
 loc_44F9:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ex	de, hl
 		ld	hl, (TPP)
 		or	a
@@ -8430,20 +8430,20 @@ loc_44F9:
 		ld	c, 5
 		call	lZtest		; Tests	a C bytes long BCD pointed by (HL) for zero
 		jp	nz, loc_4539
-		ld	hl, (tmpPtr)
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp1)
+		ld	(pTmp2), hl
 		inc	hl
 		ld	c, (hl)
 		ld	b, 0
 		add	hl, bc
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, ibcd1
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 5
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, ibcdUnk05
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
 		jp	loc_4584
@@ -8456,8 +8456,8 @@ loc_4539:
 		call	sub_9789
 		ld	(pStkPos), hl
 		call	sub_9789
-		ld	(tmpPtr), hl
-		ld	(Ptr1),	hl
+		ld	(pTmp1), hl
+		ld	(pTmp2), hl
 		inc	hl
 		ld	c, (hl)
 		ld	b, 0
@@ -8465,25 +8465,25 @@ loc_4539:
 		inc	hl
 		ld	de, 5
 		add	hl, de
-		ld	(tmpPtr), hl
-		ld	(word_0274), ix
-		ld	hl, (word_0274)
+		ld	(pTmp1), hl
+		ld	(pTmp5), ix
+		ld	hl, (pTmp5)
 		ld	bc, 0FFFBh
 		add	hl, bc
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		ld	de, ibcdUnk05
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
-		ld	ix, (word_0274)
+		ld	ix, (pTmp5)
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	de, ibcd1
 		ld	hl, ibcdV1
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
 loc_4584:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 5
 		add	hl, de
-		ld	(tmpPtr), hl
-		ld	hl, (Ptr1)
+		ld	(pTmp1), hl
+		ld	hl, (pTmp2)
 		ld	a, (hl)
 		cp	0
 		jp	z, loc_459D
@@ -8500,23 +8500,23 @@ loc_45A0:
 		ld	c, 5
 		call	lZtest		; Tests	a C bytes long BCD pointed by (HL) for zero
 		jp	z, loc_44DF
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (hl)
 		or	a
 		jp	z, loc_44DF
-		ld	(word_0274), ix
-		ld	hl, (word_0274)
+		ld	(pTmp5), ix
+		ld	hl, (pTmp5)
 		ld	de, ibcdUnk05
 		call	Copy5DEHL	; Copy 5 bytes from (DE) to (HL) ; SetI
-		ld	hl, (word_0274)
+		ld	hl, (pTmp5)
 		ld	de, 5
 		add	hl, de
-		ld	(word_0274), hl
-		ld	ix, (word_0274)
+		ld	(pTmp5), hl
+		ld	ix, (pTmp5)
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		dec	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		call	sub_97BE
 		ld	hl, (pStkPos)
 		call	sub_97BE
@@ -8535,7 +8535,7 @@ loc_4606:
 		ld	a, 0
 		ld	(Result), a
 loc_460B:
-		ld	ix, (Ptr3)
+		ld	ix, (pTmp4)
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, (bmFlag1)	; b2:Routine not saved
 		and	00000010b
@@ -8573,15 +8573,15 @@ sub_463E:
 		ld	(byte_04EB), a
 		ld	a, 6
 		ld	(I6), a
-		ld	(tmpPtr), ix
+		ld	(pTmp1), ix
 		ld	hl, (word_02FE)
 		ld	a, (hl)
 		cp	Minus
 		jp	z, loc_46C1
 		ld	hl, (word_0502)
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	hl, (word_02F8)
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	a, (byte_04EB)
 		ld	(I1), a
 		ld	a, (byte_04EC)
@@ -8590,7 +8590,7 @@ loc_4688:
 		call	sub_8B6A
 		ld	ix, (word_0502)
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		cp	Minus
 		jp	z, loc_46DC
@@ -8613,9 +8613,9 @@ loc_46BA:
 		ret
 loc_46C1:
 		ld	hl, (word_02F8)
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	hl, (word_0502)
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	a, (byte_04EC)
 		ld	(I1), a
 		ld	a, (byte_04EB)
@@ -8642,13 +8642,13 @@ sub_46E2:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(byte_04EB), a
-		ld	(tmpPtr), ix
+		ld	(pTmp1), ix
 		ld	hl, (word_02F8)
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (byte_04EC)
 		ld	(I1), a
 		ld	hl, (word_02FE)
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	a, (byte_04ED)
 		ld	(I2), a
 		ld	a, 6
@@ -8658,50 +8658,50 @@ sub_46E2:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(I3), a
-		ld	(word_0274), ix
+		ld	(pTmp5), ix
 		ld	hl, (word_02FE)
 		ld	a, (hl)
 		cp	Minus
 		jp	z, loc_476A
-		ld	hl, (tmpPtr)
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp1)
+		ld	(pTmp2), hl
 		ld	a, (I3)
 		ld	(I1), a
 		ld	hl, (word_0502)
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	a, (byte_04EB)
 		ld	(I2), a
 loc_475B:
 		call	sub_8B6A
-		ld	hl, (word_0274)
+		ld	hl, (pTmp5)
 		ld	a, (hl)
 		cp	Minus
 		jp	z, loc_47BA
 		jp	loc_4785
 loc_476A:
 		ld	hl, (word_0502)
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (byte_04EB)
 		ld	(I1), a
-		ld	hl, (tmpPtr)
-		ld	(Ptr2),	hl
+		ld	hl, (pTmp1)
+		ld	(pTmp3), hl
 		ld	a, (I3)
 		ld	(I2), a
 		jp	loc_475B
 loc_4785:
 		ld	hl, (word_02FE)
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (byte_04ED)
 		ld	(I1), a
 		ld	hl, (word_0502)
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	a, (byte_04EB)
 		ld	(I2), a
 		ld	a, 5
 		ld	(I6), a
 		call	sub_8B6A
 		ld	hl, (Vptr)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (word_0502)
 		ld	(word_02C8), hl
 		call	sub_33D6
@@ -8761,8 +8761,8 @@ loc_4820:
 		dec	hl
 		ld	(pStkPos), hl
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		ld	(word_0276), ix
-		ld	hl, (word_0276)
+		ld	(pTmp6), ix
+		ld	hl, (pTmp6)
 		ld	bc, 0FFFEh
 		add	hl, bc
 		ld	(Vptr),	hl
@@ -8777,9 +8777,9 @@ sub_4839:
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_9789
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(TPP), ix
-		ld	de, (tmpPtr)
+		ld	de, (pTmp1)
 		ld	hl, (TPP)
 		or	a
 		sbc	hl, de
@@ -8823,7 +8823,7 @@ Timeout2:
 sub_48A2:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (pRtnName)	; Pointer to the loaded	routine	name
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		call	sub_5AA4
 		ld	hl, (word_9F96)
 		ld	(hl), 0
@@ -8845,7 +8845,7 @@ sub_48A2:
 sub_48D2:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (pRtnName)	; Pointer to the loaded	routine	name
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		call	sub_5AA4
 		call	sub_5EB8
 		call	sub_5D7A
@@ -8877,7 +8877,7 @@ sub_4900:
 		ld	a, (Result)
 		or	a
 		jp	z, Error34	; Invalid line reference
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	(pCurRtnLine), hl ; Pointer to current routine line
 		ret
 ; End of function sub_4900
@@ -8885,9 +8885,9 @@ sub_4900:
 sub_4914:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (pStartOfRtn) ; Pointer to the start of the	loaded routine
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_491D:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		cp	1Ah
 		jp	z, locret_492C
@@ -8900,13 +8900,13 @@ locret_492C:
 sub_492D:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_5EB8
-		ld	hl, (Ptr1)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp2)
+		ld	(pTmp1), hl
 loc_4939:
 		call	sub_5F1D
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ex	de, hl
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		or	a
 		sbc	hl, de
 		jp	nz, loc_4939
@@ -8918,13 +8918,13 @@ sub_494A:
 		ld	hl, ForSW
 		inc	(hl)
 		ld	hl, (pStkPos)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (Token)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		xor	a
 		ld	(I1), a
 loc_4961:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		cp	Space
 		jp	z, loc_4988
@@ -8938,30 +8938,30 @@ loc_4961:
 		xor	00000001b
 		ld	(I1), a
 loc_497E:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		jp	loc_4961
 loc_4988:
 		ld	a, (I1)
 		cp	1
 		jp	z, loc_497E
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_4997:
 		ld	a, (Mode)
 		cp	0
 		jp	nz, loc_49AC
 		ld	de, (pStkStart)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		or	a
 		sbc	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_49AC:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		call	sub_97BE
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(Token), a
 		ret
 ; End of function sub_494A
@@ -9008,14 +9008,14 @@ bcXecute:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(StrLen), a	; Length of the	current	string (plus 1)
-		ld	(tmpPtr), ix
-		ld	hl, (tmpPtr)
+		ld	(pTmp1), ix
+		ld	hl, (pTmp1)
 		cpl
 		ld	c, a
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, IndSW
 		inc	(hl)
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
@@ -9049,7 +9049,7 @@ bcXecute:
 		xor	a
 		ld	(ForSW), a
 		ld	(IndFL), a	; Indirection flag
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(pStkStart), hl
 		dec	hl
 		ld	(pStkPos), hl
@@ -9079,25 +9079,25 @@ sub_4A8E:
 		call	Null1		; Does nothing
 		call	sub_50FE
 		ld	(pIndex), ix
-		ld	de, (tmpPtr)
+		ld	de, (pTmp1)
 		ld	hl, (pIndex)
 		or	a
 		sbc	hl, de
 		ld	(pIndex), hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(Count), a
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	bc, (pIndex)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ex	de, hl
-		ld	hl, (Ptr1)
-		call	sub_971B
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp2)
+		call	CopyBCup	; Copy BC bytes	from (HL)->(DE)	up
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		dec	ix
 		ld	hl, Count
 		inc	(hl)
@@ -9150,14 +9150,14 @@ AC109:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(StrLen), a	; Length of the	current	string (plus 1)
-		ld	(tmpPtr), ix
-		ld	hl, (tmpPtr)
+		ld	(pTmp1), ix
+		ld	hl, (pTmp1)
 		cpl
 		ld	c, a
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		cp	255
 		jp	z, Error11	; String too long
@@ -9196,7 +9196,7 @@ loc_4B7E:				; Pointer to the previous routine line
 		inc	ix
 		ld	a, 3
 		ld	(Mode),	a
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(pStkPos), hl
 		ld	(pStkStart), hl
 		dec	hl
@@ -9229,8 +9229,8 @@ AC1102:
 ; Body of ZDELETE command
 bczDelete:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (RoutinesDR)
-		ld	(Drive), a
+		ld	a, (RoutinesDR)	; Default drive	for routines
+		ld	(Drive), a	; Current disk drive
 		ld	a, 1
 		ld	(FCBType), a	; 0:Global, 1:Routine, 2:File
 		call	FFirst		; Find first file
@@ -9253,7 +9253,7 @@ sub_4BF3:
 		sbc	hl, de
 		jp	z, locret_4C0C
 		ld	hl, (pCurRtnLine) ; Pointer to current routine line
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		call	sub_5F1D
 locret_4C0C:
 		ret
@@ -9269,17 +9269,17 @@ sub_4C0D:
 		sbc	hl, de
 		jp	z, locret_4C3D
 		ld	hl, (pCurRtnLine) ; Pointer to current routine line
-		ld	(Ptr1),	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp2), hl
+		ld	(pTmp4), hl
 loc_4C29:
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		inc	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ld	a, (hl)
 		cp	0Ah
 		jp	nz, loc_4C29
 		inc	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		call	sub_5D7A
 locret_4C3D:
 		ret
@@ -9297,13 +9297,13 @@ bfzExists:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, 2
 		ld	(FCBType), a	; 0:Global, 1:Routine, 2:File
-		ld	a, (RoutinesDR)
-		ld	(Drive), a
+		ld	a, (RoutinesDR)	; Default drive	for routines
+		ld	(Drive), a	; Current disk drive
 		ld	hl, (pDevice)
 		ld	(pIndex), hl
 		ld	hl, Backslash
-		ld	(tmpPtr), hl
-		ld	hl, tmpPtr
+		ld	(pTmp1), hl
+		ld	hl, pTmp1
 		ld	(pDevice), hl
 		call	FFirst		; Find first file
 		ld	a, (Result)
@@ -9337,7 +9337,7 @@ sub_4C9E:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(CmdLineSz), a
+		ld	(CmdLineSz), a	; Size of the command line
 		ld	(word_02B0), ix
 		ld	hl, (word_02B0)
 		cpl
@@ -9346,9 +9346,9 @@ sub_4C9E:
 		inc	bc
 		add	hl, bc
 		ld	(word_02B0), hl
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		call	sub_5DB5
-		ld	ix, (word_0274)
+		ld	ix, (pTmp5)
 		call	SSChk		; Check	for room on the	syntax stack
 		ret
 ; End of function sub_4C9E
@@ -9372,25 +9372,25 @@ loc_4CD4:
 		jp	nz, Error20	; Illegal expression
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChar), a
-		ld	hl, tmpChar
+		ld	(tmpChar1), a
+		ld	hl, tmpChar1
 		ld	a, 11011111b	; Uppercase mask
 		and	(hl)
 		ld	(hl), a
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		sub	41h		; 'A'
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		ld	a, (Count)
 		cp	1
 		jp	nz, loc_4D19
-		ld	a, (tmpChar)
-		ld	(RoutinesDR), a
+		ld	a, (tmpChar1)
+		ld	(RoutinesDR), a	; Default drive	for routines
 		call	Null2		; Does nothing
 		jp	loc_4D22
 loc_4D19:
 		call	sub_7367
-		ld	a, (tmpChar)
-		ld	(GlobalsDR), a
+		ld	a, (tmpChar1)
+		ld	(GlobalsDR), a	; Default drive	for globals
 loc_4D22:
 		ld	hl, Count
 		dec	(hl)
@@ -9410,11 +9410,11 @@ sub_4D30:
 		jp	nz, Error30	; Unimplemented	operation
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	a, (Mode)
 		cp	1
 		jp	nz, locret_4D6D
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		cp	31h		; '1'
 		jp	z, loc_4D66
 		cp	32h		; '2'
@@ -9438,33 +9438,33 @@ sub_4D6E:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
-		ld	(tmpPtr), ix
-		ld	hl, (tmpPtr)
+		ld	(tmpChar2), a
+		ld	(pTmp1), ix
+		ld	hl, (pTmp1)
 		cpl
 		ld	c, a
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		inc	hl
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	hl, (tmpPtr)
-		ld	a, (tmpChr)
-		call	ShiftUp		; Shifts the stack towards the top
+		ld	hl, (pTmp1)
+		ld	a, (tmpChar2)
+		call	ShiftUp		; Shifts the stack towards its top
 		ld	(hl), 0
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(hl), a
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
 		inc	(hl)
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	l, a
 		ld	h, 0
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		call	sub_97BE
 		ret
 ; End of function sub_4D6E
@@ -9472,19 +9472,19 @@ sub_4D6E:
 sub_4DB3:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (Vptr)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_02C8), ix
 		ld	hl, FReal
-		call	NumToStr	; Converts a number to a string	ToS
+		call	NumToStr	; Converts a number pointed by HL to a string and push it
 		call	sub_33D6
-		ld	(tmpPtr), ix
+		ld	(pTmp1), ix
 		ld	a, (byte_04F3)
 		ld	(I1), a
 loc_4DD3:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		dec	hl
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (I1)
 		cp	1
 		jp	z, loc_4DF7
@@ -9495,12 +9495,12 @@ loc_4DD3:
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, I1
 		dec	(hl)
 		jp	loc_4DD3
 loc_4DF7:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(byte_04ED), a
 		ld	a, (byte_04F3)
@@ -9534,31 +9534,31 @@ locret_4E31:
 bfcCheck:
 		call	SSChk		; Check	for room on the	syntax stack
 		xor	a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
 		ld	(StrLen), a	; Length of the	current	string (plus 1)
-		ld	(tmpPtr), ix
+		ld	(pTmp1), ix
 bfcCheck1:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		or	a
 		jp	z, bfcCheck2
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
-		ld	(tmpChar), a
-		ld	hl, tmpChr
+		ld	(tmpChar1), a
+		ld	hl, tmpChar2
 		xor	(hl)
 		ld	(hl), a
 		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		dec	(hl)
 		jp	bfcCheck1
 bfcCheck2:
-		ld	ix, (tmpPtr)
+		ld	ix, (pTmp1)
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		call	IntToStr	; Convert integer to string and	push it
 		ret
 ; End of function bfcCheck
@@ -9603,7 +9603,7 @@ sub_4EAC:
 		call	sub_7974
 		ld	hl, glbptrUnk
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_4F60
 		call	sub_70A8
 		call	FindKey		; Find place for a key
@@ -9615,13 +9615,13 @@ sub_4EAC:
 		ld	a, (Result)
 		cp	0
 		jp	z, loc_4F60
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
 		ld	a, (hl)
 		ld	(byte_04CC), a
 		inc	hl
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	ix, (word_02A4)
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	(ix+0),	Carat
@@ -9643,7 +9643,7 @@ sub_4EAC:
 loc_4F21:
 		call	sub_5861
 		ld	a, (NameLen)	; Length of the	current	variable name
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		add	a, (hl)
 		ld	(NameLen), a	; Length of the	current	variable name
 		ld	a, (byte_04CC)
@@ -9682,13 +9682,13 @@ sub_4F6E:
 		ld	(pIndex), hl
 		ld	a, 1
 		ld	(byte_A69F), a
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		ld	(pStkPos), hl
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	(I1), a
 		ld	a, 0Fh
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	a, 0
 		ld	(ITX), a
 		ld	(Result), a
@@ -9705,9 +9705,9 @@ loc_4FA9:
 		jp	nz, loc_4FCF
 		ld	a, 1
 		ld	(ITX), a
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		inc	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ld	hl, I1
 		dec	(hl)
 		ld	hl, StrLen	; Length of the	current	string (plus 1)
@@ -9717,7 +9717,7 @@ loc_4FA9:
 		jp	z, loc_5084
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 loc_4FCF:
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
 		ld	a, (Token)
 		cp	1Ch		; Is it	'.'?
@@ -9740,9 +9740,9 @@ loc_4FE9:
 loc_4FFB:
 		ld	hl, I1
 		dec	(hl)
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		cp	1Dh
 		jp	z, loc_5084
 		ld	a, (I1)
@@ -9790,10 +9790,10 @@ loc_5064:
 		cp	0
 		jp	z, loc_507C
 		ld	a, 1Eh
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		sub	(hl)
 		ld	(I2), a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	hl, (pStkPos)
 		inc	(hl)
 loc_507C:
@@ -9804,7 +9804,7 @@ loc_5084:
 		ld	a, (ITX)
 		cp	0
 		jp	z, loc_50BD
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		inc	hl
 		ld	(pStkPos), hl
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
@@ -9824,9 +9824,9 @@ loc_509D:				; 'i'
 		jp	nz, loc_509D
 		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		inc	(hl)
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		dec	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 loc_50BD:
 		ld	hl, (pIndex)
 		xor	a
@@ -9863,8 +9863,8 @@ sub_50CC:
 ; End of function sub_50CC
 ; =============== S U B	R O U T	I N E =======================================
 sub_50FE:
-		ld	(tmpPtr), ix
-		ld	hl, (tmpPtr)
+		ld	(pTmp1), ix
+		ld	hl, (pTmp1)
 		dec	hl
 		dec	hl
 		ld	e, (hl)
@@ -9872,7 +9872,7 @@ sub_50FE:
 		or	a
 		sbc	hl, de
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ret
 ; End of function sub_50FE
 ; =============== S U B	R O U T	I N E =======================================
@@ -9902,20 +9902,20 @@ loc_513C:
 		ld	d, (hl)
 		ex	de, hl
 		ld	a, (hl)
-		ld	(Drive), a
+		ld	(Drive), a	; Current disk drive
 		inc	hl
-		ld	(pFCBAddr), hl
+		ld	(pFCBAddr), hl	; Pointer to FCB address
 		ld	hl, (word_02E0)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(pFRWBuffer), hl
+		ld	(pFRWBuffer), hl ; Pointer to file R/W buffer
 		ld	hl, (word_02D4)
 		ld	a, (hl)
 		and	00000010b
 		jp	z, loc_5161
-		call	FSeqWrite	; Sequential write file
+		call	FSeqWrite	; Sequential write file	(5 retries)
 loc_5161:
 		call	sub_9D7F
 loc_5164:
@@ -9935,9 +9935,9 @@ loc_5175:
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		cp	1Ah
 ifdef BINMODE
 		; Binary file support
@@ -9949,7 +9949,7 @@ else
 		jp	z, locret_5197
 endif
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ex	de, hl
 		ld	hl, (word_02E2)
 		ld	(hl), e
@@ -9974,13 +9974,13 @@ sub_5198:
 		ld	d, 0
 		or	a
 		sbc	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_0510), hl
 		dec	hl
 		ld	a, (hl)
 		ld	(I1), a
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		cp	1
 		jp	z, loc_51D3
 		ld	a, (hl)
@@ -9990,20 +9990,20 @@ sub_5198:
 		add	a, (hl)
 		ld	(I1), a
 loc_51D3:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		dec	hl
 		dec	hl
 		ld	e, (hl)
 		ld	d, 0
 		or	a
 		sbc	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, I1
 		dec	(hl)
 		ld	a, (I1)
 		or	a
 		jp	nz, loc_51D3
-		ld	ix, (tmpPtr)
+		ld	ix, (pTmp1)
 		call	SSChk		; Check	for room on the	syntax stack
 		dec	ix
 		ld	a, (ix+0)
@@ -10022,8 +10022,8 @@ loc_51D3:
 loc_5215:
 		call	sub_42C0
 loc_5218:
-		ld	(Ptr1),	ix
-		ld	hl, (Ptr1)
+		ld	(pTmp2), ix
+		ld	hl, (pTmp2)
 		ld	(word_0502), hl
 		dec	hl
 		dec	hl
@@ -10034,7 +10034,7 @@ loc_5218:
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	ix, (word_0510)
 		call	SSChk		; Check	for room on the	syntax stack
 		dec	ix
@@ -10057,7 +10057,7 @@ loc_5218:
 		ld	a, (ix+0)
 		ld	(I1), a
 		ld	a, (I3)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	a, (I1)
 		ld	l, a
 		ld	h, 0
@@ -10069,9 +10069,9 @@ loc_527A:
 		ld	b, 0
 		add	hl, bc
 		ld	(pIndex), hl
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		dec	(hl)
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	nz, loc_527A
 		call	sub_9321
@@ -10081,7 +10081,7 @@ loc_527A:
 		cp	0
 		jp	z, Error11	; String too long
 loc_52A3:
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	a, (I2)
 		call	sub_97B3
 		ld	a, (I2)
@@ -10090,7 +10090,7 @@ loc_52A3:
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	hl, I3
 		dec	(hl)
 		ld	a, (I3)
@@ -10151,7 +10151,7 @@ loc_5323:
 		inc	bc
 		add	hl, bc
 		ld	(word_050E), hl
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	a, (byte_0549)
 		or	a
 		jp	nz, loc_5359
@@ -10165,7 +10165,7 @@ loc_5323:
 		inc	bc
 		add	hl, bc
 		ld	(word_050E), hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 loc_5359:
 		ld	hl, ibcdTemp1
 		ld	a, (hl)
@@ -10209,20 +10209,20 @@ loc_53B4:
 		ld	a, (I3)
 		or	a
 		jp	z, loc_53F3
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (I1)
 		ld	b, a
 		ld	a, (I2)
 		call	sub_95A6
-		ld	(Ptr1),	hl
-		ld	(tmpChr), a
+		ld	(pTmp2), hl
+		ld	(tmpChar2), a
 		ld	a, (Result)
 		cp	0
 		jp	z, loc_543B
 		ld	a, (I1)
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		sub	(hl)
 		ld	(I1), a
 		ld	hl, I3
@@ -10232,19 +10232,19 @@ loc_53B4:
 		call	DbcdHL		; Decrements by	1 the C	bytes long BCD pointed by (HL)
 		jp	loc_53B4
 loc_53F3:
-		ld	hl, (Ptr1)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp2)
+		ld	(pTmp1), hl
 		ld	a, (I1)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 loc_53FF:
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (I1)
 		ld	b, a
 		ld	a, (I2)
 		call	sub_95A6
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	(N), a
 		ld	a, (Result)
 		cp	0
@@ -10261,29 +10261,29 @@ loc_53FF:
 		jp	z, loc_5444
 		jp	loc_53FF
 loc_543B:
-		ld	hl, (Ptr1)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp2)
+		ld	(pTmp1), hl
 		jp	loc_5474
 loc_5444:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	hl, I1
 		sub	(hl)
 		ld	hl, I2
 		sub	(hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	a, (I1)
 		add	a, (hl)
 		ld	(I1), a
 		jp	loc_5474
 loc_545C:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (I1)
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		xor	a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	(I3), a
 loc_5470:
 		xor	a
@@ -10291,9 +10291,9 @@ loc_5470:
 loc_5474:
 		ld	a, (I1)
 		ld	(byte_0547), a
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(byte_0546), a
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(word_050C), hl
 		ld	c, a
 		ld	b, 0
@@ -10321,14 +10321,14 @@ writeChar:
 		ld	a, (IODevice)
 		or	a
 		jp	nz, writeChar1
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		call	putChar		; Outputs the character	on A to	the console
 		ret
 writeChar1:
 		ld	a, (IODevice)
 		cp	1
 		jp	nz, writeChar2
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		call	PrtOut		; Write	a character to the printer device
 		ret
 writeChar2:
@@ -10363,7 +10363,7 @@ writeChar4:
 		ld	d, (hl)
 		ex	de, hl
 		ld	(pIndex), hl
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		ld	(hl), a
 		ld	hl, (word_02E4)
 		inc	(hl)
@@ -10387,16 +10387,16 @@ writeChar4:
 		ld	d, (hl)
 		ex	de, hl
 		ld	a, (hl)
-		ld	(Drive), a
+		ld	(Drive), a	; Current disk drive
 		inc	hl
-		ld	(pFCBAddr), hl
+		ld	(pFCBAddr), hl	; Pointer to FCB address
 		ld	hl, (word_02E0)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(pFRWBuffer), hl
-		call	FSeqWrite	; Sequential write file
+		ld	(pFRWBuffer), hl ; Pointer to file R/W buffer
+		call	FSeqWrite	; Sequential write file	(5 retries)
 		ld	hl, (word_02E4)
 		ld	(hl), 0
 		ld	hl, (word_02E0)
@@ -10540,7 +10540,7 @@ sub_5663:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		cp	1
 		jp	nz, Error48	; Invalid parameter
 		dec	ix
@@ -10564,33 +10564,33 @@ sub_569A:
 		ld	a, (byte_A699)
 		cp	3
 		jp	nz, loc_56F4
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		cp	3
 		jp	nz, loc_56E1
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		cp	44h		; 'D'
 		jp	nz, loc_56E1
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		cp	4Eh		; 'N'
 		jp	nz, loc_56E1
 		dec	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		cp	45h		; 'E'
 		jp	nz, loc_56E1
 		ld	de, ibcdTemp0
 		ld	hl, ibcdVmax
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
-		ld	ix, (tmpPtr)
+		ld	ix, (pTmp1)
 		call	SSChk		; Check	for room on the	syntax stack
 		jp	locret_570C
 loc_56E1:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, locret_570C
 		call	ExprToInt	; Convert expression to	integer
@@ -10601,7 +10601,7 @@ loc_56F4:
 		ld	a, (byte_A699)
 		cp	4
 		jp	nz, Error48	; Invalid parameter
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, locret_570C
 		call	ExprToInt	; Convert expression to	integer
@@ -10616,27 +10616,27 @@ sub_570D:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(byte_A699), a
-		ld	(tmpChr), a
-		ld	(word_0276), ix
+		ld	(tmpChar2), a
+		ld	(pTmp6), ix
 loc_571F:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, loc_573B
-		ld	hl, (word_0276)
+		ld	hl, (pTmp6)
 		dec	hl
 		dec	hl
 		ld	e, (hl)
 		ld	d, 0
 		or	a
 		sbc	hl, de
-		ld	(word_0276), hl
-		ld	hl, tmpChr
+		ld	(pTmp6), hl
+		ld	hl, tmpChar2
 		dec	(hl)
 		jp	loc_571F
 loc_573B:
-		ld	hl, (word_0276)
+		ld	hl, (pTmp6)
 		dec	hl
-		ld	(word_0276), hl
+		ld	(pTmp6), hl
 		ld	a, (hl)
 		ld	(DeviceInUse), a
 		call	sub_574A
@@ -10645,51 +10645,51 @@ loc_573B:
 ; =============== S U B	R O U T	I N E =======================================
 sub_574A:
 		ld	hl, DevTable
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (DeviceInUse)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 loc_5756:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, loc_576E
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 14h
 		add	hl, de
-		ld	(tmpPtr), hl
-		ld	hl, tmpChr
+		ld	(pTmp1), hl
+		ld	hl, tmpChar2
 		dec	(hl)
 		jp	loc_5756
 loc_576E:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(word_02D4), hl
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_02D6), hl
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pDevX), hl
 		ld	de, 5
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pDevY), hl
 		ld	de, 5
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_02DE), hl
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pDevice), hl
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_02E0), hl
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_02E2), hl
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_02E4), hl
 		ret
 ; End of function sub_574A
@@ -10705,7 +10705,7 @@ sub_57BC:
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(pFRWBuffer), hl
+		ld	(pFRWBuffer), hl ; Pointer to file R/W buffer
 		ld	hl, (word_02E0)
 		ld	e, (hl)
 		inc	hl
@@ -10720,7 +10720,7 @@ sub_57BC:
 		ld	a, (hl)
 		and	00000010b
 		jp	z, loc_57EF
-		call	FSeqWrite	; Sequential write file
+		call	FSeqWrite	; Sequential write file	(5 retries)
 loc_57EF:
 		ld	hl, ibcdTemp0
 		ld	de, ibcdVmax
@@ -10732,16 +10732,16 @@ loc_57EF:
 		and	11110000b
 		jp	nz, loc_5859
 		call	IntToChar	; Integer to char (0-255)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	a, (Result)
 		cp	0
 		jp	z, loc_5859
 loc_5815:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, loc_5842
 		call	sub_5112
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		dec	(hl)
 		jp	loc_5815
 loc_5826:				; Compute file size
@@ -10752,12 +10752,12 @@ loc_5826:				; Compute file size
 		call	FRndRead	; Read random file record in DE
 loc_5834:
 		call	sub_5112
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	1Ah
 		jp	z, loc_5842
 		jp	loc_5834
 loc_5842:
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	1Ah
 		jp	nz, loc_5852
 		ld	hl, (word_02D6)
@@ -10778,13 +10778,13 @@ locret_5860:
 ; End of function sub_57BC
 ; =============== S U B	R O U T	I N E =======================================
 sub_5861:
-		ld	hl, (VarPtr)	; Points to a var in the symbol	table
+		ld	hl, (pVar)	; Points to a var in the symbol	table
 		ld	a, (hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	(I5), a
 		ld	(I6), a
 		inc	hl
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	a, 0
 		ld	(ITX), a
 		xor	a
@@ -10802,7 +10802,7 @@ sub_5861:
 		ld	(I3), a
 		ld	(ix+0),	Quotes
 		inc	ix
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
 		inc	(hl)
 		jp	loc_58C3
@@ -10811,20 +10811,20 @@ loc_58A1:
 		ld	(ITX), a
 		ld	(ix+0),	Minus
 		inc	ix
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
 loc_58B0:				; Points to a var in the symbol	table
-		ld	hl, (VarPtr)
+		ld	hl, (pVar)
 		inc	hl
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
-		ld	hl, tmpChr
+		ld	(pVar),	hl	; Points to a var in the symbol	table
+		ld	hl, tmpChar2
 		dec	(hl)
 		ld	hl, I5
 		dec	(hl)
 		ld	hl, I6
 		dec	(hl)
 loc_58C3:				; Points to a var in the symbol	table
-		ld	hl, (VarPtr)
+		ld	hl, (pVar)
 		ld	a, (hl)
 		ld	(I2), a
 		ld	a, (byte_A60F)
@@ -10835,7 +10835,7 @@ loc_58C3:				; Points to a var in the symbol	table
 		jp	nz, loc_58E3
 		ld	(ix+0),	Quotes
 		inc	ix
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
 loc_58E3:
 		ld	a, (ITX)
@@ -10861,9 +10861,9 @@ loc_590E:
 		ld	a, (I2)
 		ld	(ix+0),	a
 		inc	ix
-		ld	hl, (VarPtr)	; Points to a var in the symbol	table
+		ld	hl, (pVar)	; Points to a var in the symbol	table
 		inc	hl
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	hl, I6
 		dec	(hl)
 		ld	a, (I6)
@@ -10928,8 +10928,8 @@ loc_5999:				; b2:Routine not saved
 		ld	a, (hl)
 		or	00000001b
 		ld	(hl), a
-		ld	(tmpPtr), ix
-		ld	a, (tmpChr)
+		ld	(pTmp1), ix
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, loc_59B1
 		call	NumLit		; Check	for numeric literal
@@ -10953,20 +10953,20 @@ loc_59BA:				; b2:Routine not saved
 		ld	a, (I4)
 		or	a
 		jp	z, loc_59F1
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(word_0278), hl
+		ld	(pTmp7), hl
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (I1)
-		call	ShiftUp		; Shifts the stack towards the top
+		call	ShiftUp		; Shifts the stack towards its top
 		ld	(hl), Minus
 		ld	hl, I1
 		inc	(hl)
 loc_59F1:
 		ld	hl, (word_02B0)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (I1)
 		call	ShiftDn		; Shifts the stack towards its base
 		jp	loc_5A13
@@ -10995,8 +10995,8 @@ loc_5A13:
 sub_5A30:
 		ld	a, 1
 		ld	(Result), a
-		ld	a, (CmdLineSz)
-		ld	(tmpChr), a
+		ld	a, (CmdLineSz)	; Size of the command line
+		ld	(tmpChar2), a
 		xor	a
 		ld	(NameLen), a	; Length of the	current	variable name
 		ld	hl, (word_02B0)
@@ -11010,9 +11010,9 @@ loc_5A45:
 		ld	(pIndex), hl
 		ld	hl, NameLen	; Length of the	current	variable name
 		inc	(hl)
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		dec	(hl)
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	nz, loc_5A45
 		ld	a, 0
@@ -11034,10 +11034,10 @@ sub_5A67:
 ; =============== S U B	R O U T	I N E =======================================
 sub_5A7B:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(word_A654), hl
 		ld	hl, (pRtnName)	; Pointer to the loaded	routine	name
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		call	sub_55A0
 		ld	a, 1
 		ld	(byte_A6A1), a
@@ -11046,13 +11046,13 @@ sub_5A7B:
 		ld	(byte_A6A1), a
 		call	sub_5575
 		ld	hl, (word_A654)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ret
 ; End of function sub_5A7B
 ; =============== S U B	R O U T	I N E =======================================
 sub_5AA4:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ex	de, hl
 		ld	hl, (word_9F96)
 		or	a
@@ -11061,7 +11061,7 @@ sub_5AA4:
 		ld	a, (bmFlag1)	; b2:Routine not saved
 		and	00000100b
 		jp	nz, Error42	; Remove or save routine
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(word_A62E), hl
 		call	sub_5A67
 		ld	a, (byte_A6A1)
@@ -11070,23 +11070,23 @@ sub_5AA4:
 		call	sub_63EE
 loc_5AD0:
 		ld	de, (word_9F96)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, 0Bh
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
-		ld	hl, (tmpPtr)
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
+		ld	hl, (pTmp1)
 		ld	(word_A62E), hl
 		ld	de, 9
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(word_A624), hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 6
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (word_9F98)
 		ld	(word_9F9A), hl
 		ld	de, (word_A624)
@@ -11101,9 +11101,9 @@ loc_5B15:
 		ld	bc, (word_A624)
 		ld	hl, (word_9F9A)
 		ex	de, hl
-		ld	hl, (tmpPtr)
-		call	sub_971B
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp1)
+		call	CopyBCup	; Copy BC bytes	from (HL)->(DE)	up
+		ld	(pTmp1), hl
 		ex	de, hl
 		ld	(word_9F9A), hl
 		ld	(hl), 1Ah
@@ -11139,69 +11139,69 @@ FNDLB:
 		ld	a, (INF)
 		cp	1
 		jp	z, FNDLBE
-		ld	(tmpPtr), ix
+		ld	(pTmp1), ix
 		ld	hl, (pStartOfRtn) ; Pointer to the start of the	loaded routine
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 FNDLB1:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (hl)
 		cp	1Ah		; EOR
 		jp	z, FNDLBE
-		ld	(Ptr2),	hl
-		ld	(word_0276), hl
+		ld	(pTmp3), hl
+		ld	(pTmp6), hl
 		xor	a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 FNDLB2:
-		ld	hl, (word_0276)
+		ld	hl, (pTmp6)
 		ld	a, (hl)
 		cp	Space
 		jp	z, FNDLB3
 		ld	a, (hl)
 		cp	9
 		jp	z, FNDLB3
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
-		ld	hl, (word_0276)
+		ld	hl, (pTmp6)
 		inc	hl
-		ld	(word_0276), hl
+		ld	(pTmp6), hl
 		jp	FNDLB2
 FNDLB3:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, FNDLB5
 		cp	8		; (todo) NAMLN
 		jp	c, FNDLB4
 		ld	a, 8
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 FNDLB4:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	hl, I1
 		cp	(hl)
 		jp	nz, FNDLB5
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (I1)
 		ld	c, a
-		call	JSE		; Compare C bytes long strings pointed by (DE) and (HL)
+		call	cpCStr		; Compare C bytes long strings pointed by (DE) and (HL)
 		jr	nz, FNDLB5
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ex	de, hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		jp	FNDLB6
 FNDLB5:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (hl)
 		cp	0Ah
 		jp	nz, FNDLB5
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		jp	FNDLB1
 FNDLB6:
-		ld	hl, (Ptr2)
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp3)
+		ld	(pTmp2), hl
 		ld	a, 1
 		ld	(Result), a
 FNDLBE:
@@ -11359,7 +11359,7 @@ sub_5D1F:
 		ld	a, 1
 		ld	(byte_A610), a
 		ld	hl, byte_A668
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(hl), 0
 		ld	de, ibcdUnk07
 		ld	hl, ibcdV0
@@ -11371,7 +11371,7 @@ sub_5D1F:
 		jp	z, loc_5D4D
 		call	sub_5FDE
 		ld	hl, (pStartOfRtn) ; Pointer to the start of the	loaded routine
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 loc_5D4D:
 		ld	a, (Result)
 		ld	(I3), a
@@ -11385,7 +11385,7 @@ loc_5D4D:
 loc_5D65:
 		ld	a, (I3)
 		ld	(Result), a
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	(pStkStart), hl
 		ld	(pCurRtnLine), hl ; Pointer to current routine line
 		ld	a, 0
@@ -11398,17 +11398,17 @@ sub_5D7A:
 		ld	a, (byte_A69D)
 		or	a
 		jp	nz, Error44	; Illegal command during BREAK
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	(pCurRtnLine), hl ; Pointer to current routine line
-		ld	bc, (Ptr1)
-		ld	hl, (Ptr3)
+		ld	bc, (pTmp2)
+		ld	hl, (pTmp4)
 		ex	de, hl
 		ld	hl, (pEndOfRtn)	; Pointer to the end of	the loaded routine
 		call	sub_9721
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	(Ptr3),	hl
-		ld	hl, (Ptr1)
+		ld	(pTmp4), hl
+		ld	hl, (pTmp2)
 		ld	(pEndOfRtn), hl	; Pointer to the end of	the loaded routine
 		ld	(hl), 1Ah
 		ld	(word_9F9A), hl
@@ -11425,15 +11425,15 @@ sub_5DB5:
 		ld	a, (byte_A69D)
 		or	a
 		jp	nz, Error44	; Illegal command during BREAK
-		ld	a, (CmdLineSz)
+		ld	a, (CmdLineSz)	; Size of the command line
 		or	a
 		jp	z, Error00	; Missing linestart character
 		call	sub_5A7B
 		ld	hl, (word_02B0)
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ld	(pIndex), hl
 		xor	a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 loc_5DD6:
 		ld	hl, (pIndex)
 		ld	a, (hl)
@@ -11447,11 +11447,11 @@ loc_5DD6:
 		jp	z, Error00	; Missing linestart character
 		inc	hl
 		ld	(pIndex), hl
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
 		jp	loc_5DD6
 loc_5DF6:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, loc_5E41
 		ld	a, 1
@@ -11483,7 +11483,7 @@ loc_5E28:				; Search routine for label
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 loc_5E41:				; Pointer to the end of	the loaded routine
 		ld	hl, (pEndOfRtn)
-		ld	a, (CmdLineSz)
+		ld	a, (CmdLineSz)	; Size of the command line
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
@@ -11497,7 +11497,7 @@ loc_5E41:				; Pointer to the end of	the loaded routine
 		jp	Error10		; Program larger than partition
 loc_5E5F:				; Pointer to the end of	the loaded routine
 		ld	hl, (pEndOfRtn)
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	hl, (pIndex)
 		ld	(pEndOfRtn), hl	; Pointer to the end of	the loaded routine
 		ld	hl, (pCurRtnLine) ; Pointer to current routine line
@@ -11506,17 +11506,17 @@ loc_5E5F:				; Pointer to the end of	the loaded routine
 		ld	bc, (word_02B0)
 		ld	hl, (pIndex)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		call	sub_972F
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ex	de, hl
 		ld	(pIndex), hl
 		ld	de, (pCurRtnLine) ; Pointer to current routine line
-		ld	hl, (Ptr3)
-		ld	a, (CmdLineSz)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
+		ld	hl, (pTmp4)
+		ld	a, (CmdLineSz)	; Size of the command line
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		ld	hl, (pCurRtnLine) ; Pointer to current routine line
-		ld	a, (CmdLineSz)
+		ld	a, (CmdLineSz)	; Size of the command line
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
@@ -11541,20 +11541,20 @@ sub_5EB8:
 		ld	a, (Result)
 		or	a
 		jp	z, Error34	; Invalid line reference
-		ld	hl, (Ptr1)
-		ld	(Ptr3),	hl
+		ld	hl, (pTmp2)
+		ld	(pTmp4), hl
 		ld	a, (Case)
 		cp	1
 		jp	nz, loc_5EE5
 loc_5ED3:
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		inc	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ld	a, (hl)
 		cp	0Ah
 		jp	nz, loc_5ED3
 		inc	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ret
 loc_5EE5:
 		ld	a, (Case)
@@ -11564,33 +11564,33 @@ loc_5EE5:
 		ld	a, (Result)
 		or	a
 		jp	z, Error34	; Invalid line reference
-		ld	de, (Ptr1)
-		ld	hl, (Ptr3)
+		ld	de, (pTmp2)
+		ld	hl, (pTmp4)
 		or	a
 		sbc	hl, de
 		jp	c, Error34	; Invalid line reference
 loc_5F04:
-		ld	hl, (Ptr3)
+		ld	hl, (pTmp4)
 		inc	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ld	a, (hl)
 		cp	0Ah
 		jp	nz, loc_5F04
 		inc	hl
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ret
 loc_5F16:				; Pointer to the end of	the loaded routine
 		ld	hl, (pEndOfRtn)
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ret
 ; End of function sub_5EB8
 ; =============== S U B	R O U T	I N E =======================================
 sub_5F1D:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (tmpPtr)
-		ld	(Ptr2),	hl
+		ld	hl, (pTmp1)
+		ld	(pTmp3), hl
 		xor	a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	hl, (word_02D4)
 		ld	a, (hl)
 		and	00001000b
@@ -11606,29 +11606,29 @@ sub_5F1D:
 		ld	hl, (word_02E4)
 		ld	(hl), 0
 loc_5F44:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		cp	Space
 		jp	z, loc_5F6E
 		cp	9
 		jp	z, loc_5F6E
 		call	writeChar	; Outputs the character	on A to	the current IODevice
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(tmpPtr), hl
-		ld	a, (tmpChar)
+		ld	(pTmp1), hl
+		ld	a, (tmpChar1)
 		cp	0Ah
 		jp	z, loc_5FC5
 		jp	loc_5F44
 loc_5F6E:
 		ld	a, 0Ch
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		cp	(hl)
 		jp	c, loc_5F81
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		sub	(hl)
 		ld	(NameLen), a	; Length of the	current	variable name
 		jp	loc_5F86
@@ -11637,7 +11637,7 @@ loc_5F81:
 		ld	(NameLen), a	; Length of the	current	variable name
 loc_5F86:
 		ld	a, Space
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
 		ld	hl, NameLen	; Length of the	current	variable name
 		dec	(hl)
@@ -11645,9 +11645,9 @@ loc_5F86:
 		or	a
 		jp	nz, loc_5F86
 loc_5F99:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		cp	Space
 		jp	z, loc_5F99
@@ -11655,14 +11655,14 @@ loc_5F99:
 		cp	9
 		jp	z, loc_5F99
 loc_5FAC:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(tmpPtr), hl
-		ld	a, (tmpChar)
+		ld	(pTmp1), hl
+		ld	a, (tmpChar1)
 		cp	0Ah
 		jp	nz, loc_5FAC
 loc_5FC5:
@@ -11682,7 +11682,7 @@ loc_5FC5:
 sub_5FDE:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, byte_A668
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(hl), 0
 		ld	de, ibcdUnk07
 		ld	hl, ibcdV0
@@ -11690,7 +11690,7 @@ sub_5FDE:
 		ld	hl, TRtnName	; Temp routine name storage
 		call	sub_97A2
 		ld	hl, TRtnName	; Temp routine name storage
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		or	a
 		jp	z, locret_6100
@@ -11701,29 +11701,29 @@ sub_5FDE:
 		ld	a, (byte_A610)
 		cp	0
 		jp	z, loc_603C
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ex	de, hl
 		ld	hl, (word_9F96)
 		or	a
 		sbc	hl, de
 		jp	z, loc_602C
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(word_A62E), hl
 		call	sub_6530
 loc_602C:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(pRtnName), hl	; Pointer to the loaded	routine	name
 		ld	de, 0Fh
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		jp	loc_60E5
 loc_603C:
 		call	sub_5AA4
 		jp	locret_6100
 loc_6042:
 		call	sub_63EE
-		ld	a, (RoutinesDR)
-		ld	(Drive), a
+		ld	a, (RoutinesDR)	; Default drive	for routines
+		ld	(Drive), a	; Current disk drive
 		ld	a, 1
 		ld	(FCBType), a	; 0:Global, 1:Routine, 2:File
 		ld	hl, TRtnName	; Temp routine name storage
@@ -11734,11 +11734,11 @@ loc_6042:
 		ld	hl, (word_9F98)
 		ld	(word_9F9A), hl
 		ld	hl, SaveRtnBuf
-		ld	(pFRWBuffer), hl
+		ld	(pFRWBuffer), hl ; Pointer to file R/W buffer
 loc_606A:
 		call	sub_9D7F
 		ld	hl, SaveRtnBuf
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (word_9F9A)
 		ld	de, (word_A622)
 		add	hl, de
@@ -11763,9 +11763,9 @@ loc_60A8:
 		ld	bc, (word_A622)
 		ld	hl, (word_9F9A)
 		ex	de, hl
-		ld	hl, (tmpPtr)
-		call	sub_971B
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp1)
+		call	CopyBCup	; Copy BC bytes	from (HL)->(DE)	up
+		ld	(pTmp1), hl
 		ex	de, hl
 		ld	(word_9F9A), hl
 		ld	hl, (word_A622)
@@ -11775,7 +11775,7 @@ loc_60A8:
 		jp	loc_606A
 loc_60CA:
 		ld	hl, (word_9F98)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (word_9F9A)
 		ld	(hl), 1Ah
 		ld	hl, (word_9F96)
@@ -11785,11 +11785,11 @@ loc_60CA:
 		call	CopyHLDE	; Copy (HL) bytes from (HL) to (DE)
 		call	sub_650E
 loc_60E5:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(pStartOfRtn), hl ; Pointer to the start of the	loaded routine
 		ld	de, (word_A624)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pEndOfRtn), hl	; Pointer to the end of	the loaded routine
 		ld	hl, (pRtnName)	; Pointer to the loaded	routine	name
 		ld	bc, 0FFFBh	; 65531
@@ -11869,7 +11869,7 @@ MV2LN:
 		call	SSChk		; Check	for room on the	syntax stack
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		or	a
 		jp	nz, MV2LN1
 		ld	de, ibcdTemp0
@@ -11877,7 +11877,7 @@ MV2LN:
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
 		jp	MV2LN2
 MV2LN1:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(ix+0),	a
 		inc	ix
 		ld	hl, ibcdTemp0
@@ -11893,20 +11893,20 @@ MV2LN2:
 		ld	a, (byte_A610)
 		cp	0
 		jp	z, MV2LN4
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		cp	8
 		jp	c, MV2LN3
 		ld	a, 8
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 MV2LN3:
 		ld	hl, byte_A668
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(hl), a
 		inc	hl
-		ld	(tmpPtr), hl
-		ld	de, (tmpPtr)
-		ld	hl, (Ptr1)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
+		ld	(pTmp1), hl
+		ld	de, (pTmp1)
+		ld	hl, (pTmp2)
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		ld	de, ibcdUnk07
 		ld	hl, ibcdTemp0
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
@@ -11914,7 +11914,7 @@ MV2LN4:
 		ld	a, 0
 		ld	(Result), a
 MV2LN5:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ex	de, hl
 		ld	hl, (pEndOfRtn)	; Pointer to the end of	the loaded routine
 		or	a
@@ -11925,14 +11925,14 @@ MV2LN5:
 		call	lZtest		; Tests	a C bytes long BCD pointed by (HL) for zero
 		jp	z, MV2LN7
 MV2LN6:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (hl)
 		cp	0Ah
 		jp	nz, MV2LN6
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	hl, ibcdTemp0
 		ld	c, 5		; (todo) INTLN
 		call	DbcdHL		; Decrements by	1 the C	bytes long BCD pointed by (HL)
@@ -11949,30 +11949,30 @@ sub_6238:
 		ld	a, 0
 		ld	(Result), a
 		ld	hl, (word_A626)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_6246:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(pIndex), hl
 		ld	hl, TRtnName	; Temp routine name storage
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ex	de, hl
 		ld	hl, (pIndex)
 		call	sub_9558
 		ld	(pIndex), hl
 		ex	de, hl
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	(Case),	a
 		cp	2
 		jp	z, loc_6286
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Bh
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ex	de, hl
 		ld	hl, (word_A626)
 		or	a
@@ -11980,10 +11980,10 @@ loc_6246:
 		jp	z, locret_629C
 		jp	loc_6246
 loc_6286:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 9
 		add	hl, de
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -12159,16 +12159,16 @@ sub_63EE:
 		ld	a, (bmFlag1)	; b2:Routine not saved
 		and	00000100b
 		jp	nz, Error42	; Remove or save routine
-		ld	hl, (tmpPtr)
-		ld	(word_0276), hl
+		ld	hl, (pTmp1)
+		ld	(pTmp6), hl
 		ld	hl, (word_9F96)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		or	a
 		jp	z, loc_645F
 		ld	de, 9
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -12188,22 +12188,22 @@ sub_63EE:
 		ld	bc, 0Bh
 		call	sub_968F
 		ld	hl, (word_A62E)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (word_9F96)
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		call	sub_64D9
 		ld	bc, (word_A624)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ex	de, hl
-		ld	hl, (Ptr1)
-		call	sub_971B
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp2)
+		call	CopyBCup	; Copy BC bytes	from (HL)->(DE)	up
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(hl), 1Ah
 loc_645F:
-		ld	hl, (word_0276)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp6)
+		ld	(pTmp1), hl
 		ret
 ; End of function sub_63EE
 ; =============== S U B	R O U T	I N E =======================================
@@ -12213,72 +12213,72 @@ SaveRtn:
 		call	FCreate		; Create file
 		ld	hl, (word_A624)
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (pStartOfRtn) ; Pointer to the start of the	loaded routine
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	hl, 80h
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ld	hl, SaveRtnBuf
-		ld	(pFRWBuffer), hl
+		ld	(pFRWBuffer), hl ; Pointer to file R/W buffer
 SaveRtn1:
 		ld	hl, SaveRtnBuf
-		ld	(Ptr2),	hl
-		ld	hl, (tmpPtr)
+		ld	(pTmp3), hl
+		ld	hl, (pTmp1)
 		ld	de, 0FF80h
 		add	hl, de
 		jp	nc, SaveRtn2
-		ld	bc, (Ptr3)
-		ld	hl, (Ptr2)
+		ld	bc, (pTmp4)
+		ld	hl, (pTmp3)
 		ex	de, hl
-		ld	hl, (Ptr1)
-		call	sub_971B
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp2)
+		call	CopyBCup	; Copy BC bytes	from (HL)->(DE)	up
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	(Ptr2),	hl
-		ld	de, (Ptr3)
-		ld	hl, (tmpPtr)
+		ld	(pTmp3), hl
+		ld	de, (pTmp4)
+		ld	hl, (pTmp1)
 		or	a
 		sbc	hl, de
-		ld	(tmpPtr), hl
-		call	FSeqWrite	; Sequential write file
+		ld	(pTmp1), hl
+		call	FSeqWrite	; Sequential write file	(5 retries)
 		jp	SaveRtn1
 SaveRtn2:
-		ld	bc, (tmpPtr)
-		ld	hl, (Ptr2)
+		ld	bc, (pTmp1)
+		ld	hl, (pTmp3)
 		ex	de, hl
-		ld	hl, (Ptr1)
-		call	sub_971B
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp2)
+		call	CopyBCup	; Copy BC bytes	from (HL)->(DE)	up
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	(Ptr2),	hl
-		call	FSeqWrite	; Sequential write file
+		ld	(pTmp3), hl
+		call	FSeqWrite	; Sequential write file	(5 retries)
 		call	FClose		; Close	file
 		ret
 ; End of function SaveRtn
 ; =============== S U B	R O U T	I N E =======================================
 sub_64D9:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	de, (tmpPtr)
-		ld	hl, (Ptr1)
+		ld	de, (pTmp1)
+		ld	hl, (pTmp2)
 		ld	a, 0Bh
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
-		ld	hl, (Ptr1)
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
+		ld	hl, (pTmp2)
 		ld	de, 9
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(word_A624), hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	de, 6
 		add	hl, de
-		ld	(Ptr1),	hl
-		ld	hl, (tmpPtr)
+		ld	(pTmp2), hl
+		ld	hl, (pTmp1)
 		ld	de, 0Fh
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ret
 ; End of function sub_64D9
 ; =============== S U B	R O U T	I N E =======================================
@@ -12291,10 +12291,10 @@ sub_650E:
 		ld	hl, (word_9F96)
 		ld	de, 9
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	hl, (word_A624)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
@@ -12345,12 +12345,12 @@ loc_656F:
 ; Line to Stack
 Ln2Stk:
 		xor	a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	a, (Result)
 		or	a
 		jp	z, Ln2Stk5
 Ln2Stk1:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (hl)
 		cp	Space
 		jp	z, Ln2Stk2
@@ -12364,19 +12364,19 @@ Ln2Stk1:
 		ld	(ix+0),	a
 		inc	ix
 		inc	hl
-		ld	(Ptr1),	hl
-		ld	hl, tmpChr
+		ld	(pTmp2), hl
+		ld	hl, tmpChar2
 		inc	(hl)
 		jp	Ln2Stk1
 Ln2Stk2:
 		ld	(ix+0),	Space
 		inc	ix
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
 Ln2Stk3:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (hl)
 		cp	Space
 		jp	z, Ln2Stk3
@@ -12387,23 +12387,23 @@ Ln2Stk3:
 		cp	0Dh
 		jp	z, Ln2Stk5
 Ln2Stk4:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (hl)
 		ld	(ix+0),	a
 		inc	ix
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		cp	255
 		jp	z, Error11	; String too long
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		inc	(hl)
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (hl)
 		cp	0Dh
 		jp	nz, Ln2Stk4
 Ln2Stk5:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(ix+0),	a
 		inc	ix
 		ld	(ix+0),	3
@@ -12448,8 +12448,8 @@ sub_664B:
 		add	hl, de
 		ld	(pStkPos), hl
 loc_6664:
-		ld	(tmpPtr), ix
-		ld	hl, (tmpPtr)
+		ld	(pTmp1), ix
+		ld	hl, (pTmp1)
 		ld	(word_0502), hl
 		ld	bc, 0FFFDh
 		add	hl, bc
@@ -12460,7 +12460,7 @@ loc_6664:
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_02F8), hl
 		ld	bc, 0FFFEh
 		add	hl, bc
@@ -12471,11 +12471,11 @@ loc_6664:
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_02FE), hl
 		ld	bc, 0FFFEh
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(Vptr),	hl
 		ret
 ; End of function sub_664B
@@ -12484,50 +12484,50 @@ loc_6664:
 IndRet:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (pStkPos)
-		ld	(tmpPtr), hl
-		ld	(Ptr2),	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp1), hl
+		ld	(pTmp3), hl
+		ld	(pTmp2), hl
 IndRet1:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (hl)
 		cp	0Dh		; End of indirection
 		jp	z, IndRet2
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		jp	IndRet1
 IndRet2:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	de, 8		; (todo) SHTLN+SHTLN+PTRLN+SHTLN???
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	(TPP), ix
 		ld	hl, (TPP)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		or	a
 		sbc	hl, de
 		jp	z, IndRet4
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
 		ld	a, (hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(pIndex), hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(pStkPos), hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
 		ld	a, (hl)
@@ -12536,7 +12536,7 @@ IndRet2:
 		ld	a, (hl)
 		ld	(Mode),	a
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		cp	0
 		jp	nz, IndRet3
 		ld	hl, (pIndex)
@@ -12548,28 +12548,28 @@ IndRet2:
 		add	hl, de
 		ld	(pStkPos), hl
 IndRet3:
-		ld	(Ptr1),	ix
-		ld	de, (tmpPtr)
-		ld	hl, (Ptr1)
+		ld	(pTmp2), ix
+		ld	de, (pTmp1)
+		ld	hl, (pTmp2)
 		or	a
 		sbc	hl, de
-		ld	(Ptr1),	hl
-		ld	hl, tmpChr
+		ld	(pTmp2), hl
+		ld	hl, tmpChar2
 		dec	(hl)
-		ld	hl, (Ptr2)
-		ld	a, (tmpChr)
+		ld	hl, (pTmp3)
+		ld	a, (tmpChar2)
 		cpl
 		ld	c, a
 		ld	b, 255
 		inc	bc
 		add	hl, bc
-		ld	(Ptr2),	hl
-		ld	ix, (Ptr2)
+		ld	(pTmp3), hl
+		ld	ix, (pTmp3)
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (tmpPtr)
-		ld	bc, (Ptr1)
+		ld	hl, (pTmp1)
+		ld	bc, (pTmp2)
 		call	sub_97AE
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		jp	IndRetEnd
 IndRet4:
 		dec	ix
@@ -12634,7 +12634,7 @@ loc_67C5:
 loc_67EE:
 		call	sub_5861
 		ld	a, (NameLen)	; Length of the	current	variable name
-		ld	hl, tmpChr
+		ld	hl, tmpChar2
 		add	a, (hl)
 		ld	(NameLen), a	; Length of the	current	variable name
 		ld	a, (byte_04CC)
@@ -12665,7 +12665,7 @@ loc_6814:
 		ld	(ix+0),	3
 		inc	ix
 		call	Write
-		ld	hl, (VarPtr)	; Points to a var in the symbol	table
+		ld	hl, (pVar)	; Points to a var in the symbol	table
 		call	sub_97D5
 		call	Write
 		ld	(ix+0),	Quotes
@@ -12681,41 +12681,41 @@ loc_6814:
 ; =============== S U B	R O U T	I N E =======================================
 sub_6866:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 loc_6870:
 		ld	hl, ibcd1
 		ld	c, 5
 		call	lZtest		; Tests	a C bytes long BCD pointed by (HL) for zero
 		jp	z, locret_68D4
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (hl)
 		ld	(byte_04B8), a
 		inc	hl
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 loc_6886:
 		ld	a, (byte_04B8)
 		or	a
 		jp	z, loc_68BB
 		ld	hl, (pStkPos)
 		ex	de, hl
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		or	a
 		sbc	hl, de
 		jp	z, loc_68CE
 		ld	hl, (pStkPos)
 		ex	de, hl
-		ld	hl, (word_0274)
+		ld	hl, (pTmp5)
 		ld	a, (de)
 		cp	(hl)
 		jp	nz, loc_68CE
 		ld	hl, (pStkPos)
 		inc	hl
 		ld	(pStkPos), hl
-		ld	hl, (word_0274)
+		ld	hl, (pTmp5)
 		inc	hl
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		ld	hl, byte_04B8
 		dec	(hl)
 		jp	loc_6886
@@ -12736,19 +12736,19 @@ locret_68D4:
 ; =============== S U B	R O U T	I N E =======================================
 sub_68D5:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 loc_68DF:
 		ld	hl, ibcd1
 		ld	c, 5
 		call	lZtest		; Tests	a C bytes long BCD pointed by (HL) for zero
 		jp	z, locret_69DC
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	a, (hl)
 		ld	(byte_04B8), a
 		inc	hl
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		ld	hl, (pStkPos)
 		dec	hl
 		ld	(pStkPos), hl
@@ -12756,21 +12756,21 @@ loc_68DF:
 loc_68FF:
 		ld	hl, (pStkPos)
 		ex	de, hl
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		or	a
 		sbc	hl, de
 		jp	z, loc_69D3
 		ld	a, (byte_04B8)
 		or	a
 		jp	z, loc_69D3
-		ld	hl, (word_0274)
+		ld	hl, (pTmp5)
 		ld	a, (hl)
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		inc	hl
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		ld	hl, byte_04B8
 		dec	(hl)
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	41h		; 'A'
 		jp	nz, loc_693A
 		ld	a, (Token)
@@ -12780,7 +12780,7 @@ loc_68FF:
 		jp	z, loc_69B9
 		jp	loc_68FF
 loc_693A:
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	4Eh		; 'N'
 		jp	nz, loc_694D
 		ld	a, (Token)
@@ -12788,7 +12788,7 @@ loc_693A:
 		jp	z, loc_69B9
 		jp	loc_68FF
 loc_694D:
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	55h		; 'U'
 		jp	nz, loc_6960
 		ld	a, (Token)
@@ -12796,7 +12796,7 @@ loc_694D:
 		jp	z, loc_69B9
 		jp	loc_68FF
 loc_6960:
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	4Ch		; 'L'
 		jp	nz, loc_6973
 		ld	a, (Token)
@@ -12804,7 +12804,7 @@ loc_6960:
 		jp	z, loc_69B9
 		jp	loc_68FF
 loc_6973:
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	50h		; 'P'
 		jp	nz, loc_698F
 		ld	a, (Token)
@@ -12816,7 +12816,7 @@ loc_6973:
 		jp	c, loc_68FF
 		jp	loc_69B9
 loc_698F:
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	45h		; 'E'
 		jp	nz, loc_69A1
 		ld	a, (Token)
@@ -12824,7 +12824,7 @@ loc_698F:
 		jp	nz, loc_69B9
 		jp	loc_68FF
 loc_69A1:
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		cp	43h		; 'C'
 		jp	nz, loc_69B4
 		ld	a, (Token)
@@ -12893,10 +12893,10 @@ sub_6A25:
 		ld	(I5), a
 		ld	hl, (word_02F2)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		call	sub_96B9
 		ld	(I5), a
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	a, 0
 		ld	(Result), a
 		ld	a, (byte_04CC)
@@ -12916,14 +12916,14 @@ sub_6A53:
 		ld	(pIndex), hl
 		ld	(PtrX),	hl
 		ld	hl, 0
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_6A66:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
 		inc	hl
-		ld	(tmpPtr), hl
-		ld	de, (tmpPtr)
-		ld	hl, (SymEnd)
+		ld	(pTmp1), hl
+		ld	de, (pTmp1)
+		ld	hl, (SymCount)	; Number of symbols defined
 		or	a
 		sbc	hl, de
 		jp	c, loc_6A8B
@@ -12947,57 +12947,57 @@ loc_6A8B:
 sub_6A99:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (pSymbolTbl) ; Pointer to the symbol table
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(pIndex), hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
-		ld	(word_027A), hl
+		ld	(pTmp1), hl
+		ld	(pTmp8), hl
 		ld	de, (pIndex)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (byte_04CC)
 		ld	(I5), a
 		ld	hl, (word_02F2)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		call	sub_96B9
 		ld	(I5), a
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	a, (Case)
 		cp	2
 		jp	z, loc_6B22
 		cp	3
 		jp	z, loc_6B0A
-		ld	hl, (word_027A)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp8)
+		ld	(pTmp1), hl
 loc_6AE7:
 		ld	a, (byte_04CC)
 		ld	(I5), a
 		ld	hl, (word_02F2)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		call	sub_96B9
 		ld	(I5), a
-		ld	(VarPtr), hl	; Points to a var in the symbol	table
+		ld	(pVar),	hl	; Points to a var in the symbol	table
 		ld	a, (Case)
 		cp	2
 		jp	z, loc_6B22
 		cp	1
 		jp	z, loc_6B1A
 loc_6B0A:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		jp	loc_6AE7
 loc_6B1A:
 		ld	a, 0
@@ -13012,34 +13012,34 @@ locret_6B27:
 ; =============== S U B	R O U T	I N E =======================================
 sub_6B28:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (tmpPtr)
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp1)
+		ld	(pTmp2), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
-		ld	(word_0276), hl
+		ld	(pTmp1), hl
+		ld	(pTmp6), hl
 		dec	hl
-		ld	(tmpPtr), hl
-		ld	hl, (Ptr1)
+		ld	(pTmp1), hl
+		ld	hl, (pTmp2)
 		dec	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	bc, (pSymbolTbl) ; Pointer to the symbol table
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		call	sub_972F
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pSymbolTbl), hl ; Pointer to the symbol table
-		ld	hl, (word_0276)
-		ld	(tmpPtr), hl
-		ld	hl, (SymEnd)
+		ld	hl, (pTmp6)
+		ld	(pTmp1), hl
+		ld	hl, (SymCount)	; Number of symbols defined
 		dec	hl
-		ld	(SymEnd), hl
+		ld	(SymCount), hl	; Number of symbols defined
 		ret
 ; End of function sub_6B28
 ; =============== S U B	R O U T	I N E =======================================
@@ -13048,80 +13048,80 @@ sub_6B6F:
 		ld	a, (byte_A695)
 		ld	l, a
 		ld	h, 0
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		ld	bc, 0FFFEh
 		add	hl, bc
-		ld	(Ptr2),	hl
-		ld	hl, (word_0274)
+		ld	(pTmp3), hl
+		ld	hl, (pTmp5)
 		ld	a, (byte_A694)
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
 		inc	hl
-		ld	(word_0274), hl
-		ld	hl, (tmpPtr)
-		ld	(Ptr1),	hl
+		ld	(pTmp5), hl
+		ld	hl, (pTmp1)
+		ld	(pTmp2), hl
 		ld	hl, (pSymbolTbl) ; Pointer to the symbol table
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pIndex), hl
-		ld	de, (word_0274)
+		ld	de, (pTmp5)
 		or	a
 		sbc	hl, de
-		ld	(tmpPtr), hl
-		ld	de, (tmpPtr)
+		ld	(pTmp1), hl
+		ld	de, (pTmp1)
 		ld	hl, (word_9F9A)
 		or	a
 		sbc	hl, de
 		jp	c, loc_6BB9
 		jp	Error31		; Symbol table overflow
-loc_6BB9:
-		ld	hl, (SymEnd)
+loc_6BB9:				; Number of symbols defined
+		ld	hl, (SymCount)
 		inc	hl
-		ld	(SymEnd), hl
-		ld	hl, (tmpPtr)
+		ld	(SymCount), hl	; Number of symbols defined
+		ld	hl, (pTmp1)
 		ld	(pSymbolTbl), hl ; Pointer to the symbol table
-		ld	bc, (tmpPtr)
+		ld	bc, (pTmp1)
 		ld	hl, (pIndex)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		call	sub_9721
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ex	de, hl
 		ld	(pIndex), hl
-		ld	de, (word_0274)
-		ld	hl, (Ptr1)
+		ld	de, (pTmp5)
+		ld	hl, (pTmp2)
 		or	a
 		sbc	hl, de
-		ld	(Ptr1),	hl
-		ld	hl, (word_0274)
+		ld	(pTmp2), hl
+		ld	hl, (pTmp5)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	de, 2
 		add	hl, de
-		ld	(Ptr1),	hl
-		ld	bc, (Ptr2)
+		ld	(pTmp2), hl
+		ld	bc, (pTmp3)
 		ex	de, hl
 		ld	hl, (word_02F2)
-		call	sub_971B
+		call	CopyBCup	; Copy BC bytes	from (HL)->(DE)	up
 		ld	(word_02F2), hl
 		ex	de, hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (byte_A694)
 		ld	(hl), a
 ; End of function sub_6B6F
 ; =============== S U B	R O U T	I N E =======================================
 sub_6C12:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		inc	hl
-		ld	(Ptr1),	hl
-		ld	de, (Ptr1)
+		ld	(pTmp2), hl
+		ld	de, (pTmp2)
 		ld	hl, (word_02F4)
 		ld	a, (byte_A694)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		call	sub_6A53
 		ld	hl, (pIndex)
 		ex	de, hl
@@ -13148,7 +13148,7 @@ sub_6C34:
 		call	sub_980F
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_6C7D
 		call	sub_7995
 		ld	de, 765
@@ -13171,14 +13171,14 @@ sub_6C8A:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, 1
 		ld	(I1), a
-		ld	hl, (tmpPtr)
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp1)
+		ld	(pTmp2), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		call	sub_8431
 		ret
 ; End of function sub_6C8A
@@ -13189,25 +13189,25 @@ sub_6CA6:
 		ld	hl, (pGLBBuffer3)
 		ld	de, 14h
 		add	hl, de
-		ld	(word_0278), hl
+		ld	(pTmp7), hl
 		xor	a
 		ld	(N), a
 loc_6CBA:
 		ld	hl, N
 		inc	(hl)
-		ld	hl, (word_0278)
-		ld	(word_0274), hl
+		ld	hl, (pTmp7)
+		ld	(pTmp5), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (word_0278)
+		ld	hl, (pTmp7)
 		add	hl, de
-		ld	(word_0278), hl
+		ld	(pTmp7), hl
 		ld	bc, 0FFFDh
 		add	hl, bc
 		ld	(pIndex), hl
 		ld	de, byte_0515
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	nz, loc_6CBA
 		ld	hl, N
 		dec	(hl)
@@ -13221,7 +13221,7 @@ sub_6CE3:
 		call	sub_980F
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_6D42
 loc_6CFB:
 		call	sub_6D48
@@ -13235,18 +13235,18 @@ loc_6CFB:
 		or	a
 		jp	nz, loc_6D22
 loc_6D15:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_6D22:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	bc, 0FFFDh
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		call	sub_980F
 		jp	loc_6CFB
@@ -13266,16 +13266,16 @@ locret_6D47:
 sub_6D48:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Ch
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(pIndex), hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
 		ld	a, (hl)
@@ -13285,28 +13285,28 @@ sub_6D48:
 		ld	(byte_A696), a
 		ld	de, 5
 		add	hl, de
-		ld	(tmpPtr), hl
-		ld	(word_027A), hl
+		ld	(pTmp1), hl
+		ld	(pTmp8), hl
 		ld	de, (pIndex)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (byte_04CC)
 		ld	(I5), a
 		ld	hl, (word_A640)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		call	sub_96C0
 		ld	(I5), a
-		ld	(word_027E), hl
+		ld	(pTmp10), hl
 		ld	a, (Case)
 		cp	1
 		jp	nz, loc_6DCE
-		ld	hl, (word_027A)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp8)
+		ld	(pTmp1), hl
 		xor	a
 		ld	(byte_A60B), a
 loc_6DA9:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -13318,21 +13318,21 @@ loc_6DA9:
 		ld	(I5), a
 		ld	hl, (word_A640)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		call	sub_96C0
 		ld	(I5), a
-		ld	(word_027E), hl
+		ld	(pTmp10), hl
 loc_6DCE:
 		ld	a, (Case)
 		cp	3
 		jp	nz, locret_6DEA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, byte_A60B
 		inc	(hl)
 		jp	loc_6DA9
@@ -13364,29 +13364,29 @@ loc_6E1E:
 		ld	hl, byte_0512
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Fh
 		add	hl, de
 		ld	a, (hl)
 		ld	(byte_A696), a
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0524
 		call	sub_980F
 		xor	a
 		ld	(I1), a
 		ld	hl, byte_0524
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_6F6A
 		ld	de, byte_0512
 		ld	hl, byte_0524
 		call	sub_980F
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 3
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_A640), ix
 		call	sub_7E48
 		dec	ix
@@ -13398,18 +13398,18 @@ loc_6E1E:
 		ld	hl, byte_0518
 		call	sub_980F
 		call	sub_6CA6
-		ld	hl, (word_0274)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp5)
+		ld	(pTmp1), hl
 		xor	a
 		ld	(I1), a
 		ld	a, (byte_04CC)
 		ld	(I5), a
 		ld	hl, (word_A640)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		call	sub_96C0
 		ld	(I5), a
-		ld	(word_027E), hl
+		ld	(pTmp10), hl
 		ld	a, (N)
 		ld	(byte_A60B), a
 		ld	a, (Case)
@@ -13447,7 +13447,7 @@ loc_6E1E:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		cpl
 		ld	c, a
 		ld	b, 255
@@ -13473,7 +13473,7 @@ loc_6F3B:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		cpl
 		ld	c, a
 		ld	b, 255
@@ -13531,7 +13531,7 @@ loc_6F6A:
 		call	sub_980F
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, locret_702C
 		call	sub_6D48
 		ld	a, (byte_A60B)
@@ -13551,10 +13551,10 @@ loc_6FF9:
 		ld	hl, byte_052D
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 11h
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0524
 		call	sub_980E
 		ld	hl, (pGLbBuffer2)
@@ -13570,7 +13570,7 @@ sub_702D:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, locret_70A7
 		ld	a, (byte_A696)
 		cp	1
@@ -13579,18 +13579,18 @@ sub_702D:
 		ld	hl, byte_0512
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 14h
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_705A:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	bc, 0FFFDh
 		add	hl, bc
 		ld	(pIndex), hl
@@ -13600,7 +13600,7 @@ loc_705A:
 		ld	hl, (pGLBBuffer3)
 		ld	de, 11h
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	de, byte_0533
 		call	sub_980E
 		ld	hl, (pGLbBuffer2)
@@ -13609,7 +13609,7 @@ loc_705A:
 		ld	hl, byte_0533
 		call	sub_980F
 		call	sub_7995
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -13727,7 +13727,7 @@ loc_7170:
 		jp	z, locret_71AB
 		ld	hl, (pGLBBuffer3)
 		ld	de, byte_0512
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_719A
 		jp	loc_7170
 loc_719A:
@@ -13748,24 +13748,24 @@ sub_71AC:
 		call	sub_980F
 loc_71B8:
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Fh
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		cp	1
 		jp	z, locret_71E9
 		ld	de, 5
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
 		ld	bc, 0FFFDh
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		call	sub_980F
 		jp	loc_71B8
@@ -13778,15 +13778,15 @@ sub_71EA:
 		ld	a, (Result)
 		cp	0
 		jp	z, loc_7202
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_7202:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -13797,18 +13797,18 @@ loc_7202:
 		ld	hl, (pGLBBuffer3)
 		ld	de, 765
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		call	sub_980F
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_7242
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 14h
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_723A:
 		ld	a, 1
 		ld	(Result), a
@@ -13837,7 +13837,7 @@ loc_724F:
 		call	sub_980F
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, locret_7304
 		call	sub_7995
 		call	sub_6CA6
@@ -13849,15 +13849,15 @@ loc_727D:
 		inc	(hl)
 		jp	loc_724F
 loc_728B:
-		ld	hl, (word_0274)
+		ld	hl, (pTmp5)
 		ld	bc, 0FFFDh
 		add	hl, bc
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		ld	de, byte_0512
 		call	sub_980F
 		call	sub_7995
 		ld	hl, (pGLBBuffer3)
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -13869,16 +13869,16 @@ loc_728B:
 		jp	nz, loc_72D7
 		ld	hl, N
 		dec	(hl)
-		ld	hl, (word_0274)
+		ld	hl, (pTmp5)
 		ld	de, 11h
 		add	hl, de
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		ld	de, byte_0512
 		call	sub_980F
 		call	sub_7995
 		call	sub_809F
-		ld	hl, (tmpPtr)
-		ld	(word_0274), hl
+		ld	hl, (pTmp1)
+		ld	(pTmp5), hl
 		jp	loc_727D
 loc_72D7:
 		ld	a, (Count)
@@ -13891,12 +13891,12 @@ loc_72D7:
 		ld	a, (hl)
 		ld	(N), a
 		ld	de, 765
-		ld	hl, (word_0274)
+		ld	hl, (pTmp5)
 		add	hl, de
 		ld	de, (pIndex)
 		or	a
 		sbc	hl, de
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		ld	hl, Count
 		dec	(hl)
 		jp	loc_728B
@@ -13938,7 +13938,7 @@ loc_7340:
 		ex	de, hl
 		ld	bc, 0FFFEh
 		add	hl, bc
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	de, (word_A64E)
 		or	a
 		sbc	hl, de
@@ -13962,13 +13962,13 @@ sub_7367:
 		ld	hl, GZero
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 5
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (word_A648)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
@@ -14022,10 +14022,10 @@ sub_73C4:
 		ld	hl, byte_051B
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 14h
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_7409:
 		xor	a
 		ld	(I2), a
@@ -14033,10 +14033,10 @@ loc_7409:
 loc_7410:
 		xor	a
 		ld	(I1), a
-		ld	hl, (tmpPtr)
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp1)
+		ld	(pTmp2), hl
 loc_741A:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -14048,10 +14048,10 @@ loc_741A:
 		ld	(I5), a
 		ld	hl, (word_A640)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		call	sub_96C0
 		ld	(I5), a
-		ld	(word_027E), hl
+		ld	(pTmp10), hl
 		ld	a, (I5)
 		or	a
 		jp	nz, loc_74AD
@@ -14059,13 +14059,13 @@ loc_741A:
 		ld	(I4), a
 		ld	hl, I1
 		inc	(hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		jp	loc_741A
 loc_745F:
 		ld	a, (N)
@@ -14084,18 +14084,18 @@ loc_747A:
 		ld	hl, (pGLBBuffer3)
 		ld	de, 765
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		call	sub_980F
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_74B0
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 14h
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		xor	a
 		ld	(N), a
 		jp	loc_7410
@@ -14125,27 +14125,27 @@ loc_74B7:
 		ld	hl, byte_0533
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 11h
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		call	sub_980F
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_75C7
 		call	sub_6CA6
 		ld	a, (N)
 		ld	(I3), a
-		ld	hl, (word_0274)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp5)
+		ld	(pTmp1), hl
 loc_7517:
 		ld	de, byte_051B
 		ld	hl, byte_0512
 		call	sub_980F
 loc_7520:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(pIndex), hl
 		ld	e, (hl)
 		inc	hl
@@ -14178,7 +14178,7 @@ loc_7552:
 		ld	(N), a
 		call	sub_809F
 		call	sub_6C8A
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -14201,18 +14201,18 @@ loc_7597:
 		ld	hl, (pGLBBuffer3)
 		ld	de, 765
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		call	sub_980F
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_74B7
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 14h
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		xor	a
 		ld	(I3), a
 		jp	loc_7517
@@ -14225,24 +14225,24 @@ loc_75C7:
 loc_75D5:
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_764F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(word_02B8), hl
 		ld	de, 765
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		call	sub_980F
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	nz, loc_7622
 		ld	de, byte_0512
 		ld	hl, byte_0518
@@ -14254,14 +14254,14 @@ loc_75D5:
 		jp	loc_75D5
 loc_7622:
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	de, (word_02B8)
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	de, 64789
 		add	hl, de
 		jp	nc, loc_764F
@@ -14277,7 +14277,7 @@ loc_764F:
 		ld	hl, byte_052A
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -14289,30 +14289,30 @@ loc_764F:
 		call	sub_776C
 		jp	locret_76CD
 loc_7673:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Bh
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		cp	1
 		jp	nz, locret_76CD
 		ld	de, 4
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		cp	1
 		jp	z, locret_76CD
 		ld	de, 5
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
 		ld	bc, 65533
 		add	hl, bc
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_052A
 		call	sub_980F
 		call	sub_9B7C
@@ -14321,10 +14321,10 @@ loc_7673:
 		ld	hl, byte_052A
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 11h
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, Nil
 		call	sub_980E
 locret_76CD:
@@ -14341,36 +14341,36 @@ FindKey:
 loc_76DD:
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_7766
 		xor	a		; PASSU
 		ld	(byte_054A), a
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_76F7:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		or	a
 		jp	z, loc_7732
 		ld	hl, (word_02F2)
-		ld	(word_027A), hl
-		ld	hl, (tmpPtr)
-		ld	(Ptr1),	hl
+		ld	(pTmp8), hl
+		ld	hl, (pTmp1)
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	hl, (word_027A)
+		ld	hl, (pTmp8)
 		call	sub_9558
-		ld	(word_027A), hl
+		ld	(pTmp8), hl
 		ex	de, hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	(Case),	a
 		cp	2
 		jp	z, loc_7745
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Ch
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, byte_054A
 		inc	(hl)
 		jp	loc_76F7
@@ -14378,17 +14378,17 @@ loc_7732:
 		ld	hl, (pGLBBuffer3)
 		ld	de, 765
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		call	sub_980F
 		jp	loc_76DD
 loc_7745:
 		ld	a, 1
 		ld	(Result), a
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 9
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_052A
 		call	sub_980F
 		ld	de, byte_053F
@@ -14410,58 +14410,58 @@ sub_776C:
 		ld	hl, byte_053F
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_7788:
 		ld	a, (N)
 		or	a
 		jp	z, loc_77A0
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Ch
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, N
 		dec	(hl)
 		jp	loc_7788
 loc_77A0:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Ch
 		add	hl, de
-		ld	(Ptr1),	hl
-		ld	(Ptr2),	hl
+		ld	(pTmp2), hl
+		ld	(pTmp3), hl
 loc_77AD:
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	a, (hl)
 		or	a
 		jp	z, loc_77BF
 		ld	de, 0Ch
 		add	hl, de
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		jp	loc_77AD
 loc_77BF:
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		inc	hl
-		ld	(Ptr2),	hl
-		ld	bc, (tmpPtr)
-		ld	hl, (Ptr1)
+		ld	(pTmp3), hl
+		ld	bc, (pTmp1)
+		ld	hl, (pTmp2)
 		ex	de, hl
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		call	sub_9721
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ex	de, hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	hl, (pGLbBuffer2)
 		ld	(hl), 1
 		ld	hl, (pGLBBuffer3)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		dec	(hl)
 		ld	a, (hl)
 		or	a
 		jp	nz, locret_784D
 		ld	de, 765
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0515
 		call	sub_980F
 		ld	de, byte_0512
@@ -14474,18 +14474,18 @@ loc_77BF:
 loc_780E:
 		ld	hl, byte_0512
 		ld	de, byte_053F
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_7830
 		call	sub_79AA
 		ld	de, 765
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		call	sub_980F
 		jp	loc_780E
 loc_7830:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, byte_0515
 		call	sub_980E
 		ld	hl, (pGLbBuffer2)
@@ -14506,7 +14506,7 @@ sub_784E:
 		call	sub_980F
 		ld	hl, glbptrUnk
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	nz, loc_78E8
 		ld	de, byte_0512
 		ld	hl, GZero
@@ -14520,7 +14520,7 @@ sub_784E:
 loc_7881:
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	nz, loc_78E8
 		call	sub_9AF9
 		ld	de, byte_0515
@@ -14531,14 +14531,14 @@ loc_7881:
 		call	sub_980F
 		call	sub_79AA
 		ld	de, 765
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		ld	hl, byte_0515
 		call	sub_980F
 loc_78B8:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, byte_0512
 		call	sub_980E
 		ld	hl, (pGLbBuffer2)
@@ -14550,64 +14550,64 @@ loc_78B8:
 		ld	(hl), 0
 		ld	de, 765
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, Nil
 		call	sub_980E
 		ld	hl, (pGLBBuffer3)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		jp	loc_7910
 loc_78E8:
 		ld	de, byte_0518
 		ld	hl, byte_0512
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(N), a
 		cp	Question
 		jp	nz, loc_7910
 		ld	de, 765
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		call	sub_980F
 		jp	loc_7881
 loc_7910:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	(hl)
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (N)
 		ld	(byte_054A), a
 loc_791E:
 		ld	a, (N)
 		or	a
 		jp	z, loc_7936
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Ch
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, N
 		dec	(hl)
 		jp	loc_791E
 loc_7936:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ex	de, hl
 		ld	hl, (word_02F2)
 		call	CopyHLDE	; Copy (HL) bytes from (HL) to (DE)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 9
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, Nil
 		call	sub_980E
 		ld	de, byte_052A
 		ld	hl, Nil
 		call	sub_980F
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 3
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	(hl), 0
 		ld	hl, (pGLbBuffer2)
 		ld	(hl), 1
@@ -14622,8 +14622,8 @@ sub_7974:
 		ld	a, (bIsGlbOpen)
 		cp	1
 		jp	z, locret_7994
-		ld	a, (GlobalsDR)
-		ld	(Drive), a
+		ld	a, (GlobalsDR)	; Default drive	for globals
+		ld	(Drive), a	; Current disk drive
 		xor	a
 		ld	(FCBType), a	; 0:Global, 1:Routine, 2:File
 		call	GFOpen		; Open globals file
@@ -14656,7 +14656,7 @@ sub_79AA:
 		call	sub_9AD9
 loc_79BE:
 		ld	hl, (pGLBBuffer3)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ret
 ; End of function sub_79AA
 ; =============== S U B	R O U T	I N E =======================================
@@ -14666,7 +14666,7 @@ sub_79C5:
 		ld	(byte_A696), a
 		ld	hl, byte_052A
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	nz, loc_79DE
 		ld	a, 1
 		ld	(byte_A696), a
@@ -14676,37 +14676,37 @@ loc_79DE:
 		ld	hl, (pGLBBuffer3)
 		ld	de, 765
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	de, Nil
 		call	sub_980E
 		ld	hl, (pGLBBuffer3)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_052A
 		ld	hl, byte_0512
 		call	sub_980F
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 745
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ex	de, hl
 		ld	hl, (word_02F2)
 		call	CopyHLDE	; Copy (HL) bytes from (HL) to (DE)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 9
 		add	hl, de
 		ld	(hl), 0
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, 0
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
 		ld	(hl), 0
@@ -14716,13 +14716,13 @@ loc_79DE:
 		inc	hl
 		ld	(hl), 1
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, Nil
 		call	sub_980E
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 3
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, 0
 		ld	(hl), e
 		inc	hl
@@ -14742,10 +14742,10 @@ sub_7A61:
 loc_7A72:
 		call	sub_7995
 		call	sub_809F
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(pIndex), hl
 		xor	a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -14754,7 +14754,7 @@ loc_7A72:
 		sbc	hl, de
 		jp	nz, loc_7A93
 		ld	a, 1
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 loc_7A93:
 		ld	hl, (pIndex)
 		ld	bc, 0FFFDh
@@ -14763,7 +14763,7 @@ loc_7A93:
 		ld	a, (byte_A696)
 		cp	1
 		jp	z, loc_7ACC
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(ix+0),	a
 		inc	ix
 		ld	a, (N)
@@ -14781,7 +14781,7 @@ loc_7ACC:
 		call	sub_9B7C
 		ld	hl, byte_0512
 		ld	de, byte_052A
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, locret_7AFD
 		ld	hl, byte_0512
 		call	sub_9766
@@ -14790,7 +14790,7 @@ loc_7ACC:
 		ld	(N), a
 		dec	ix
 		ld	a, (ix+0)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		cp	1
 		jp	z, loc_7ACC
 		ld	hl, N
@@ -14812,23 +14812,23 @@ ShowGlb:
 loc_7B11:
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_7B9B
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_7B27:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(Count), a
 		or	a
 		jp	z, loc_7B88
-		ld	(word_0274), hl
+		ld	(pTmp5), hl
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		call	sub_97B3
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, 0Ch
 		ld	hl, Count
 		sub	(hl)
@@ -14855,16 +14855,16 @@ loc_7B48:
 		xor	a
 		ld	(byte_04EA), a
 loc_7B7B:
-		ld	hl, (word_0274)
+		ld	hl, (pTmp5)
 		ld	de, 0Ch
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		jp	loc_7B27
 loc_7B88:
 		ld	hl, (pGLBBuffer3)
 		ld	de, 765
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		call	sub_980F
 		jp	loc_7B11
@@ -14883,94 +14883,94 @@ sub_7BA6:
 		ld	hl, byte_0512
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(Ptr1),	hl
-		ld	hl, (tmpPtr)
+		ld	(pTmp2), hl
+		ld	hl, (pTmp1)
 		ld	de, 765
 		add	hl, de
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	de, byte_0530
 		call	sub_980F
-		ld	de, (Ptr1)
-		ld	hl, (Ptr2)
+		ld	de, (pTmp2)
+		ld	hl, (pTmp3)
 		or	a
 		sbc	hl, de
-		ld	(Ptr2),	hl
-		ld	hl, (tmpPtr)
+		ld	(pTmp3), hl
+		ld	hl, (pTmp1)
 		ld	de, 0Bh
 		add	hl, de
 		ld	a, (hl)
 		ld	(I1), a
 		ld	de, 6
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_052D
 		call	sub_980F
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 3
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		ld	hl, byte_0518
 		call	sub_980F
 		call	sub_7995
 		ld	hl, (pGLBBuffer3)
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(word_02B8), hl
 		ld	de, 765
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	de, byte_0530
 		call	sub_980E
-		ld	hl, (Ptr1)
-		ld	(Ptr3),	hl
+		ld	hl, (pTmp2)
+		ld	(pTmp4), hl
 		ld	de, (word_02B8)
 		or	a
 		sbc	hl, de
-		ld	(Ptr1),	hl
-		ld	bc, (Ptr1)
-		ld	hl, (tmpPtr)
+		ld	(pTmp2), hl
+		ld	bc, (pTmp2)
+		ld	hl, (pTmp1)
 		ex	de, hl
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		call	sub_9721
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	(tmpPtr), hl
-		ld	hl, (Ptr1)
+		ld	(pTmp1), hl
+		ld	hl, (pTmp2)
 		ld	de, 0
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
 		ld	hl, (pGLBBuffer3)
-		ld	(tmpPtr), hl
-		ld	de, (Ptr1)
-		ld	hl, (Ptr3)
+		ld	(pTmp1), hl
+		ld	de, (pTmp2)
+		ld	hl, (pTmp4)
 		or	a
 		sbc	hl, de
-		ld	(Ptr3),	hl
+		ld	(pTmp4), hl
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Bh
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		ld	hl, I1
 		add	a, (hl)
-		ld	(tmpChr), a
-		ld	hl, (tmpPtr)
+		ld	(tmpChar2), a
+		ld	hl, (pTmp1)
 		ld	(hl), a
 		call	sub_802B
 		call	sub_702D
@@ -14984,13 +14984,13 @@ sub_7BA6:
 		call	sub_6CA6
 		ld	a, (N)
 		ld	(byte_A60B), a
-		ld	hl, (word_0274)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp5)
+		ld	(pTmp1), hl
 		call	sub_6C8A
 		ld	a, (byte_A60B)
 		or	a
 		jp	nz, loc_7CC3
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, loc_7CC3
 		call	sub_6DEB
@@ -14999,21 +14999,21 @@ loc_7CC3:
 		ld	hl, byte_0518
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 11h
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0512
 		call	sub_980F
 		ld	hl, byte_0512
 		ld	de, byte_052A
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	nz, locret_7D32
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Bh
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (hl)
 		cp	1
 		jp	nz, loc_7D29
@@ -15026,10 +15026,10 @@ loc_7CC3:
 		ld	hl, byte_052A
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 11h
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, Nil
 		call	sub_980E
 loc_7D29:
@@ -15053,8 +15053,8 @@ loc_7D42:
 		ld	(byte_A698), a
 		ld	hl, (pIndex)
 		ld	a, (hl)
-		ld	(tmpChr), a
-		ld	hl, tmpChr
+		ld	(tmpChar2), a
+		ld	hl, tmpChar2
 		inc	(hl)
 		ld	a, (byte_A697)
 		add	a, (hl)
@@ -15067,10 +15067,10 @@ loc_7D42:
 loc_7D6C:
 		ld	de, (word_02D0)
 		ld	hl, (pIndex)
-		ld	a, (tmpChr)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
+		ld	a, (tmpChar2)
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		ld	hl, (word_02D0)
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
@@ -15094,25 +15094,25 @@ sub_7DA0:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, locret_7E15
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Fh
 		add	hl, de
 		ld	a, (hl)
 		ld	(byte_A696), a
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0524
 		call	sub_980E
 		ld	hl, (pGLbBuffer2)
 		ld	(hl), 1
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 3
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(word_A640), ix
 		call	sub_7E48
 		ld	de, byte_0521
@@ -15145,16 +15145,16 @@ sub_7E16:
 		call	sub_980F
 		call	sub_79AA
 		ld	de, glbptrUnk
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		call	sub_980F
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 3
 		add	hl, de
 		ld	a, (hl)
 		ld	(byte_04F9), a
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -15165,22 +15165,22 @@ sub_7E16:
 ; =============== S U B	R O U T	I N E =======================================
 sub_7E48:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (tmpPtr)
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp1)
+		ld	(pTmp2), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(pIndex), hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	de, 2
 		add	hl, de
 		ld	a, (hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	(I1), a
 		inc	hl
-		ld	(Ptr1),	hl
-		ld	(Ptr2),	hl
+		ld	(pTmp2), hl
+		ld	(pTmp3), hl
 		ld	hl, (pIndex)
 		ld	bc, 0FFFDh
 		add	hl, bc
@@ -15192,17 +15192,17 @@ loc_7E7F:
 		ld	a, (I1)
 		or	a
 		jp	z, loc_7E98
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	c, (hl)
 		ld	b, 0
 		add	hl, bc
 		inc	hl
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	hl, I1
 		dec	(hl)
 		jp	loc_7E7F
 loc_7E98:
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	e, (hl)
 		ld	d, 0
 		ld	hl, (pIndex)
@@ -15217,10 +15217,10 @@ loc_7EAB:
 		add	hl, bc
 		ld	(pIndex), hl
 loc_7EB5:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	bc, (pIndex)
 		call	sub_97AE
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		call	sub_9321
 		call	StrToChar	; Converts a string on ToS to char (0-255)
 		ld	(I1), a
@@ -15228,7 +15228,7 @@ loc_7EB5:
 		inc	ix
 		ld	(ix+0),	3
 		inc	ix
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	(ix+0),	a
 		inc	ix
 		ret
@@ -15264,7 +15264,7 @@ loc_7F0F:
 loc_7F17:
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, loc_7F29
 		call	sub_7305
 		jp	loc_7F0F
@@ -15288,10 +15288,10 @@ locret_7F4E:
 ; =============== S U B	R O U T	I N E =======================================
 sub_7F4F:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (tmpPtr)
-		ld	(Ptr1),	hl
+		ld	hl, (pTmp1)
+		ld	(pTmp2), hl
 loc_7F58:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -15299,82 +15299,82 @@ loc_7F58:
 		or	a
 		sbc	hl, de
 		jp	z, loc_7F77
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		jp	loc_7F58
 loc_7F77:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	(pIndex), hl
 		ld	de, (word_A64E)
 		add	hl, de
-		ld	(tmpPtr), hl
-		ld	bc, (Ptr1)
+		ld	(pTmp1), hl
+		ld	bc, (pTmp2)
 		ex	de, hl
 		ld	hl, (pIndex)
 		call	sub_972F
 		ld	(pIndex), hl
 		ex	de, hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (pIndex)
 		ld	a, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), a
 		ld	hl, (word_A64E)
 		ex	de, hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	de, 2
 		add	hl, de
 		ld	a, (byte_04CC)
 		ld	(hl), a
 		inc	hl
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (byte_A695)
 		sub	3
-		ld	(tmpChr), a
-		ld	de, (Ptr1)
+		ld	(tmpChar2), a
+		ld	de, (pTmp2)
 		ld	hl, (word_A640)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
-		ld	hl, (Ptr1)
-		ld	a, (tmpChr)
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
+		ld	hl, (pTmp2)
+		ld	a, (tmpChar2)
 		ld	c, a
 		ld	b, 0
 		add	hl, bc
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	a, (byte_A696)
 		cp	0
 		jp	z, loc_7FF8
 		ld	a, (byte_A694)
 		ld	(hl), a
 		inc	hl
-		ld	(Ptr1),	hl
-		ld	de, (Ptr1)
+		ld	(pTmp2), hl
+		ld	de, (pTmp2)
 		ld	hl, (word_02F4)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		jp	loc_8001
 loc_7FF8:
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	de, byte_0521
 		call	sub_980E
 loc_8001:
 		ld	hl, (pGLBBuffer3)
 		ld	de, 0Bh
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		inc	(hl)
 		call	sub_802B
 		ld	hl, (pGLBBuffer3)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -15384,7 +15384,7 @@ loc_8001:
 		sbc	hl, de
 		ld	(word_02B8), hl
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
@@ -15396,10 +15396,10 @@ sub_802B:
 		ld	de, 0Bh
 		add	hl, de
 		ld	a, (hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	de, 9
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	(PtrX),	hl
 		xor	a
 		ld	(I1), a
@@ -15408,31 +15408,31 @@ loc_8047:
 		ld	hl, I1
 		inc	(hl)
 		inc	(hl)
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		ld	hl, I1
 		cp	(hl)
 		jp	c, loc_806A
 		ld	hl, N
 		inc	(hl)
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		jp	loc_8047
 loc_806A:
 		ld	de, (PtrX)
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		or	a
 		sbc	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	hl, (pGLBBuffer3)
 		ld	de, 0Ch
 		add	hl, de
 		ld	(pIndex), hl
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ex	de, hl
 		ld	hl, (pIndex)
 		ld	(hl), e
@@ -15459,18 +15459,18 @@ sub_809F:
 		ld	(byte_A696), a
 		ld	de, 5
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 loc_80B7:
 		ld	a, (I4)
 		or	a
 		jp	z, locret_80D2
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, I4
 		dec	(hl)
 		jp	loc_80B7
@@ -15487,7 +15487,7 @@ sub_80D3:
 		ld	de, byte_9FD3
 		ld	hl, (word_02F2)
 		ld	a, (Count)
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		xor	a
 		ld	(byte_04D0), a
 		ld	hl, byte_9FD3
@@ -15527,7 +15527,7 @@ loc_811A:
 		call	sub_980F
 		call	sub_7995
 		ld	hl, (pGLBBuffer3)
-		ld	(word_027E), hl
+		ld	(pTmp10), hl
 		ld	(word_A64A), hl
 		ld	(pIndex), hl
 		ld	e, (hl)
@@ -15535,7 +15535,7 @@ loc_811A:
 		ld	d, (hl)
 		ex	de, hl
 		ld	(word_0292), hl
-		ld	hl, (word_027E)
+		ld	hl, (pTmp10)
 		ld	de, 0Bh
 		add	hl, de
 		ld	a, (hl)
@@ -15543,17 +15543,17 @@ loc_811A:
 		ld	de, 5
 		add	hl, de
 		ld	a, (hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	de, 4
 		add	hl, de
-		ld	(word_027E), hl
-		ld	(word_027A), hl
+		ld	(pTmp10), hl
+		ld	(pTmp8), hl
 		ld	a, (byte_A60B)
 		ld	hl, N
 		cp	(hl)
 		jp	z, loc_8182
 		xor	a
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 loc_8182:
 		ld	de, 765
 		ld	hl, (pIndex)
@@ -15562,24 +15562,24 @@ loc_8182:
 		or	a
 		sbc	hl, de
 		ld	(pIndex), hl
-		ld	(word_027C), hl
+		ld	(pTmp9), hl
 		xor	a
 		ld	(byte_A60D), a
 loc_819A:
 		ld	hl, byte_A60D
 		inc	(hl)
-		ld	hl, (word_027E)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp10)
+		ld	(pTmp1), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(Ptr1),	hl
-		ld	de, (Ptr1)
-		ld	hl, (word_027E)
+		ld	(pTmp2), hl
+		ld	de, (pTmp2)
+		ld	hl, (pTmp10)
 		add	hl, de
-		ld	(word_027E), hl
-		ld	a, (tmpChr)
+		ld	(pTmp10), hl
+		ld	a, (tmpChar2)
 		and	00000001b
 		jp	nz, loc_81C7
 		ld	hl, (pIndex)
@@ -15588,25 +15588,25 @@ loc_819A:
 		ld	(pIndex), hl
 loc_81C7:
 		ld	de, (pIndex)
-		ld	hl, (word_027E)
+		ld	hl, (pTmp10)
 		or	a
 		sbc	hl, de
 		jp	c, loc_819A
 		ld	hl, byte_A60D
 		dec	(hl)
-		ld	hl, (tmpPtr)
-		ld	(word_027E), hl
-		ld	de, (word_027A)
+		ld	hl, (pTmp1)
+		ld	(pTmp10), hl
+		ld	de, (pTmp8)
 		or	a
 		sbc	hl, de
 		ld	(pIndex), hl
-		ld	hl, (word_027C)
+		ld	hl, (pTmp9)
 		ld	(word_A644), hl
-		ld	hl, (word_027E)
-		ld	de, (Ptr1)
+		ld	hl, (pTmp10)
+		ld	de, (pTmp2)
 		add	hl, de
-		ld	(word_027A), hl
-		ld	de, (word_027A)
+		ld	(pTmp8), hl
+		ld	de, (pTmp8)
 		ld	hl, (word_A644)
 		or	a
 		sbc	hl, de
@@ -15627,7 +15627,7 @@ loc_81C7:
 		ld	hl, byte_A60B
 		cp	(hl)
 		jp	c, loc_823B
-		ld	de, (Ptr1)
+		ld	de, (pTmp2)
 		ld	hl, (word_A642)
 		add	hl, de
 		ld	(word_A642), hl
@@ -15646,14 +15646,14 @@ loc_823B:
 		inc	(hl)
 		ld	hl, N
 		dec	(hl)
-		ld	de, (Ptr1)
+		ld	de, (pTmp2)
 		ld	hl, (word_A644)
 		add	hl, de
 		ld	(word_A644), hl
-		ld	hl, (word_027E)
+		ld	hl, (pTmp10)
 		add	hl, de
-		ld	(word_027E), hl
-		ld	(tmpPtr), hl
+		ld	(pTmp10), hl
+		ld	(pTmp1), hl
 		ld	a, (byte_A60B)
 		or	a
 		jp	nz, loc_827E
@@ -15667,98 +15667,98 @@ loc_8281:
 		ld	hl, byte_052D
 		call	sub_980F
 		call	sub_7108
-		ld	hl, (word_027E)
-		ld	(tmpPtr), hl
+		ld	hl, (pTmp10)
+		ld	(pTmp1), hl
 		ld	hl, (pGLBBuffer3)
 		ld	de, 14h
 		add	hl, de
-		ld	(Ptr1),	hl
-		ld	bc, (Ptr1)
-		ld	hl, (word_027E)
+		ld	(pTmp2), hl
+		ld	bc, (pTmp2)
+		ld	hl, (pTmp10)
 		ex	de, hl
-		ld	hl, (word_027C)
+		ld	hl, (pTmp9)
 		call	sub_9721
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	(word_027E), hl
-		ld	hl, (Ptr1)
+		ld	(pTmp10), hl
+		ld	hl, (pTmp2)
 		ld	de, 0
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
 		ld	hl, (word_A64A)
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, 765
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	de, byte_051B
 		call	sub_980F
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	de, byte_0512
 		call	sub_980E
 		ld	hl, (word_A642)
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	hl, (pGLBBuffer3)
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ld	de, 765
 		add	hl, de
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ld	de, byte_051B
 		call	sub_980E
 		ld	hl, (word_A644)
 		ex	de, hl
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	de, 2
 		add	hl, de
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		ex	de, hl
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		call	CopyHLDE	; Copy (HL) bytes from (HL) to (DE)
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	de, 9
 		add	hl, de
 		ld	a, (N)
 		ld	(hl), a
 		ld	de, 4
 		add	hl, de
-		ld	(Ptr2),	hl
+		ld	(pTmp3), hl
 		call	sub_802B
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 9
 		add	hl, de
 		ld	a, (byte_A60D)
 		ld	(hl), a
 		ld	de, 4
 		add	hl, de
-		ld	(tmpPtr), hl
-		ld	de, (Ptr2)
-		ld	hl, (tmpPtr)
+		ld	(pTmp1), hl
+		ld	de, (pTmp3)
+		ld	hl, (pTmp1)
 		ld	a, 5
-		call	CopyUp		; Copy A bytes from (DE)->(HL) up
-		ld	hl, (tmpPtr)
+		call	CopyAup		; Copy A bytes from (HL)->(DE) up
+		ld	hl, (pTmp1)
 		inc	hl
 		ld	a, 11111110b
 		and	(hl)
 		ld	(hl), a
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_0524
 		call	sub_980F
 		ld	de, byte_0512
@@ -15805,7 +15805,7 @@ loc_8281:
 		ld	a, (byte_04DF)
 		cp	0
 		jp	z, loc_83FD
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		dec	hl
 		dec	hl
 		ld	e, (hl)
@@ -15814,14 +15814,14 @@ loc_8281:
 		sbc	hl, de
 		ld	(word_A640), hl
 		ld	a, (byte_A695)
-		ld	(tmpChr), a
-		ld	hl, tmpChr
+		ld	(tmpChar2), a
+		ld	hl, tmpChar2
 		inc	(hl)
 		inc	(hl)
 		ld	hl, (word_A640)
 		ex	de, hl
-		ld	hl, (Ptr1)
-		ld	a, (tmpChr)
+		ld	hl, (pTmp2)
+		ld	a, (tmpChar2)
 		call	ShiftDn		; Shifts the stack towards its base
 loc_83FD:
 		ld	a, (byte_A695)
@@ -15840,7 +15840,7 @@ loc_8405:
 		call	sub_980F
 		ld	hl, byte_0512
 		ld	de, Nil
-		call	JDEN
+		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
 		jp	z, locret_8430
 		call	sub_6D48
 locret_8430:
@@ -15853,42 +15853,42 @@ sub_8431:
 		or	a
 		jp	z, locret_84BB
 		ld	hl, (pGLBBuffer3)
-		ld	(word_0276), hl
+		ld	(pTmp6), hl
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(word_02B8), hl
 		ld	de, 765
-		ld	hl, (word_0276)
+		ld	hl, (pTmp6)
 		add	hl, de
 		ld	de, (word_02B8)
 		or	a
 		sbc	hl, de
-		ld	(word_0276), hl
-		ld	hl, (tmpPtr)
-		ld	de, (Ptr1)
+		ld	(pTmp6), hl
+		ld	hl, (pTmp1)
+		ld	de, (pTmp2)
 		or	a
 		sbc	hl, de
-		ld	(Ptr3),	hl
-		ld	hl, (Ptr1)
-		ld	(Ptr2),	hl
-		ld	bc, (Ptr1)
-		ld	hl, (tmpPtr)
+		ld	(pTmp4), hl
+		ld	hl, (pTmp2)
+		ld	(pTmp3), hl
+		ld	bc, (pTmp2)
+		ld	hl, (pTmp1)
 		ex	de, hl
-		ld	hl, (word_0276)
+		ld	hl, (pTmp6)
 		call	sub_9721
-		ld	(Ptr1),	hl
+		ld	(pTmp2), hl
 		ex	de, hl
-		ld	(tmpPtr), hl
-		ld	hl, (Ptr1)
+		ld	(pTmp1), hl
+		ld	hl, (pTmp2)
 		ld	de, 0
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (Ptr2)
-		ld	(tmpPtr), hl
-		ld	de, (Ptr3)
+		ld	hl, (pTmp3)
+		ld	(pTmp1), hl
+		ld	de, (pTmp4)
 		ld	hl, (word_02B8)
 		add	hl, de
 		ld	(word_02B8), hl
@@ -15904,7 +15904,7 @@ sub_8431:
 		ld	a, (hl)
 		ld	hl, I1
 		sub	(hl)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 		ld	hl, (pIndex)
 		ld	(hl), a
 		call	sub_802B
@@ -15918,27 +15918,27 @@ sub_84BC:
 		ld	hl, byte_053F
 		call	sub_980F
 		call	sub_79AA
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	a, (byte_054A)
-		ld	(tmpChr), a
+		ld	(tmpChar2), a
 loc_84D8:
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		or	a
 		jp	z, loc_84F0
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 0Ch
 		add	hl, de
-		ld	(tmpPtr), hl
-		ld	hl, tmpChr
+		ld	(pTmp1), hl
+		ld	hl, tmpChar2
 		dec	(hl)
 		jp	loc_84D8
 loc_84F0:
-		ld	hl, (tmpPtr)
+		ld	hl, (pTmp1)
 		ld	de, 9
 		add	hl, de
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ld	de, byte_052A
 		call	sub_980E
 		ld	hl, (pGLbBuffer2)
@@ -16431,7 +16431,7 @@ BGetChar:
 		ld	(Result), a
 		ld	l, 6		; Console input
 		call	BIOScall
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		cp	16		; ^P
 		jr	nz, BGetChar1
 		ld	a, (PrintTgl)
@@ -16502,7 +16502,7 @@ PrintErr2:
 		ld	a, (byte_A04B)
 		ld	c, a
 		add	a, 2
-		ld	(CmdLineSz), a
+		ld	(CmdLineSz), a	; Size of the command line
 		ld	b, 0
 		ld	de,  CmdLine+2
 		ld	hl, ArgPl
@@ -16569,12 +16569,12 @@ PrintErr3:
 PrintErr4:				; Outputs a CrLf
 		call	putCrLf
 		call	putAsterisk	; Places an asterisk under the error position
-		ld	de, ErrorsFCB
-		ld	a, (ErrorsDR)
+		ld	de, ErrorsFCB	; FCB for the errors file
+		ld	a, (ErrorsDR)	; Drive	for the	errors file
 		inc	a
 		ld	(de), a
 		ld	c, 15		; Open file
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		cp	0FFh		; Did it fail?
 		jp	nz, PrintErr6
 		pop	af
@@ -16609,14 +16609,14 @@ PrintErr6:
 		push	de
 		ld	de, Page0BUF	; Default buffer for reading sequential	files (80h-FFh)
 		ld	c, 26		; Set DMA address
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		pop	de
 		push	de
-		ld	hl, ErrorsFCB+32
+		ld	hl, ErrorsFCB+32 ; FCB for the errors file
 		ld	(hl), d
-		ld	de, ErrorsFCB
+		ld	de, ErrorsFCB	; FCB for the errors file
 		ld	c, 20		; Read next record
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		pop	de
 		ld	d, 0
 		ld	hl, Page0Buf
@@ -16823,7 +16823,7 @@ sub_8B6A:
 		ld	a, (I1)
 		ld	c, a
 		ld	b, 0Eh
-		ld	hl, (Ptr1)
+		ld	hl, (pTmp2)
 		ld	de, lbcdTemp1
 		call	BCDPack
 		ld	(Signal1), a
@@ -16831,7 +16831,7 @@ sub_8B6A:
 		ld	(byte_04EE), a
 		ld	a, (I2)
 		ld	c, a
-		ld	hl, (Ptr2)
+		ld	hl, (pTmp3)
 		ld	de, lbcdTemp2
 		call	BCDPack
 		ld	(byte_04F1), a
@@ -16947,7 +16947,7 @@ loc_8C40:
 		ld	de, lbcdTemp2
 		ld	c, 0Eh
 		call	MbcdDEHL	; Multiplies two C bytes long BCD pointed by DE	and HL
-					; result goes in MResult
+					; result goes in ibcdResult
 		ld	hl, ibcdResult	; Operation result
 		jp	loc_8D86
 loc_8C6F:
@@ -17008,7 +17008,7 @@ loc_8CAF:
 loc_8CD7:
 		ld	de, lbcdTemp2
 		call	MbcdDEHL	; Multiplies two C bytes long BCD pointed by DE	and HL
-					; result goes in MResult
+					; result goes in ibcdResult
 		ld	hl, lbcdTemp1
 		ld	de, byte_9F15
 		call	CopyCDEHL	; Copy C bytes from (DE) to (HL)
@@ -17430,7 +17430,7 @@ IDbcdDEHL4:
 ; End of function IDbcdDEHL
 ; =============== S U B	R O U T	I N E =======================================
 ; Multiplies two C bytes long BCD pointed by DE	and HL
-; result goes in MResult
+; result goes in ibcdResult
 MbcdDEHL:
 		push	hl
 		ld	hl, ibcdResult	; Operation result
@@ -18353,7 +18353,7 @@ sub_939D:
 		call	CopyCDEHL	; Copy C bytes from (DE) to (HL)
 		ld	de, lbcdTemp1
 		call	MbcdDEHL	; Multiplies two C bytes long BCD pointed by DE	and HL
-					; result goes in MResult
+					; result goes in ibcdResult
 		ex	de, hl
 		ld	c, 9
 		call	zeroCHL		; Fills	C bytes	pointed	by HL with 0x00
@@ -18371,7 +18371,7 @@ sub_939D:
 		call	CopyCDEHL	; Copy C bytes from (DE) to (HL)
 		ld	de, lbcdTemp1
 		call	MbcdDEHL	; Multiplies two C bytes long BCD pointed by DE	and HL
-					; result goes in MResult
+					; result goes in ibcdResult
 		ld	hl, ibcdResult	; Operation result
 		call	ZTest		; Tests	a bcd number for zero
 		ld	b, a
@@ -18457,7 +18457,7 @@ sub_9446:
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
 loc_9455:
 		call	sub_945E
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		jp	loc_94C3
 ; End of function sub_9446
 ; =============== S U B	R O U T	I N E =======================================
@@ -18525,7 +18525,7 @@ loc_94C3:
 		ld	(byte_04FD), a
 		ld	a, c
 		dec	a
-		ld	(CmdLineSz), a
+		ld	(CmdLineSz), a	; Size of the command line
 		ret
 loc_94D3:
 		inc	c
@@ -18542,10 +18542,10 @@ loc_94D3:
 ; =============== S U B	R O U T	I N E =======================================
 ; Writes a character to	the AUX	device
 AuxOut:
-		ld	a, (tmpChar)
+		ld	a, (tmpChar1)
 		ld	e, a
 		ld	c, 4		; Auxiliary (Punch) output
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		ret
 ; End of function AuxOut
 ; =============== S U B	R O U T	I N E =======================================
@@ -18591,7 +18591,7 @@ BIOSjmp:
 		jp	(hl)		; Jumps	to CP/M	BIOS
 ; End of function BIOSjmp
 ; =============== S U B	R O U T	I N E =======================================
-; Make a call to the CP/M BDOS
+; Makes	a call to the CP/M BDOS
 BDOScall:
 		push	ix
 		call	BDOS
@@ -18861,20 +18861,21 @@ CharToStr4:				; Push BCD into	the stack
 		ret
 ; End of function CharToStr
 ; =============== S U B	R O U T	I N E =======================================
-JDEN:
+; Compare two 3	bytes values pointed by	(DE) and (HL)
+cp3BVal:
 		ld	c, 3
-JDEN1:
+cp3BVal1:
 		ld	a, (de)
 		cp	(hl)
 		ret	nz
 		inc	hl
 		inc	de
 		dec	c
-		jp	nz, JDEN1
+		jp	nz, cp3BVal1
 		ret
-; End of function JDEN
+; End of function cp3BVal
 ; =============== S U B	R O U T	I N E =======================================
-; (todo) This originally was JPEN compare pointers
+; No references	to here	- seems	to subtract DE from HL
 sub_9675:
 		ld	a, l
 		sub	e
@@ -18885,30 +18886,31 @@ sub_9675:
 		ret
 ; End of function sub_9675
 ; =============== S U B	R O U T	I N E =======================================
-sub_967C:
+; Compare two M	Strings	pointed	by (DE)	and (HL)
+cpMString:
 		ld	c, (hl)
 		ld	a, (de)
 		cp	c
 		ret	nz
 		inc	hl
 		inc	de
-; End of function sub_967C
+; End of function cpMString
 ; =============== S U B	R O U T	I N E =======================================
 ; Compare C bytes long strings pointed by (DE) and (HL)
-JSE:
+cpCStr:
 		ld	a, c
 		or	a
 		ret	z
-JSE1:
+cpCstr1:
 		ld	a, (de)
 		cp	(hl)
 		ret	nz
 		inc	hl
 		inc	de
 		dec	c
-		jp	nz, JSE1
+		jp	nz, cpCstr1
 		ret
-; End of function JSE
+; End of function cpCStr
 ; =============== S U B	R O U T	I N E =======================================
 sub_968F:
 		push	bc
@@ -18952,7 +18954,7 @@ sub_968F:
 PrtOut:
 		ld	e, a
 		ld	c, 5		; Printer output
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		ret
 ; End of function PrtOut
 ; =============== S U B	R O U T	I N E =======================================
@@ -19036,33 +19038,34 @@ loc_9705:
 		ret
 ; End of function sub_96C0
 ; =============== S U B	R O U T	I N E =======================================
-; Copy A bytes from (DE)->(HL) up
-CopyUp:
+; Copy A bytes from (HL)->(DE) up
+CopyAup:
 		or	a
-		ret	z
+		ret	z		; Return if nothing to move
 		ld	c, a
 		ld	b, 0
 		ldir
 		ret
-; End of function CopyUp
+; End of function CopyAup
 ; =============== S U B	R O U T	I N E =======================================
-; Copy A bytes from (DE)-(HL) down
-CopyDn:
+; Copy A bytes from (HL)->(DE) down
+CopyAdn:
 		or	a
-		ret	z
+		ret	z		; Return if nothing to move
 		ld	c, a
 		ld	b, 0
 		lddr
 		ret
-; End of function CopyDn
+; End of function CopyAdn
 ; =============== S U B	R O U T	I N E =======================================
-sub_971B:
+; Copy BC bytes	from (HL)->(DE)	up
+CopyBCup:
 		ld	a, b
 		or	c
-		ret	z
+		ret	z		; Return if nothing to move
 		ldir
 		ret
-; End of function sub_971B
+; End of function CopyBCup
 ; =============== S U B	R O U T	I N E =======================================
 sub_9721:
 		or	a
@@ -19092,17 +19095,17 @@ sub_972F:
 		ret
 ; End of function sub_972F
 ; =============== S U B	R O U T	I N E =======================================
-; Output 0x00 terminated string	pointed	by HL
+; Outputs 0x00 terminated string pointed by HL
 putStr:
 		ld	a, (hl)
 		or	a
 		ret	z
 		call	putChar		; Outputs the character	on A to	the console
 		inc	hl
-		jr	putStr		; Output 0x00 terminated string	pointed	by HL
+		jr	putStr		; Outputs 0x00 terminated string pointed by HL
 ; End of function putStr
 ; =============== S U B	R O U T	I N E =======================================
-; Converts a number to a string	ToS
+; Converts a number pointed by HL to a string and push it
 NumToStr:
 		dec	hl
 		ld	a, (hl)
@@ -19137,7 +19140,7 @@ sub_9766:
 		jr	sub_9775
 ; End of function sub_9766
 ; =============== S U B	R O U T	I N E =======================================
-; (todo) Check ... no references to here
+; No references	to here
 sub_976B:
 		ld	bc, 4
 		jr	sub_9775
@@ -19173,7 +19176,7 @@ sub_9789:
 		ret
 ; End of function sub_9789
 ; =============== S U B	R O U T	I N E =======================================
-; (todo) Check ... no references to here
+; No references	to here
 sub_9794:
 		dec	ix
 		ld	a, (ix+255)
@@ -19209,8 +19212,9 @@ sub_97B3:
 		jr	sub_97FB
 ; End of function sub_97B3
 ; =============== S U B	R O U T	I N E =======================================
+; No references	to here
 sub_97BA:
-		ld	e, (hl)		; (todo) Check this
+		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
@@ -19251,8 +19255,9 @@ sub_97EC:
 		jr	sub_97FB
 ; End of function sub_97EC
 ; =============== S U B	R O U T	I N E =======================================
+; No references	to here
 sub_97F1:
-		ld	bc, 4		; (todo) Check this
+		ld	bc, 4
 		jr	sub_97FB
 		ld	bc, 5
 		jr	sub_97FB
@@ -19330,7 +19335,7 @@ ShiftDnEnd:
 		ret
 ; End of function ShiftDn
 ; =============== S U B	R O U T	I N E =======================================
-; Shifts the stack towards the top
+; Shifts the stack towards its top
 ShiftUp:
 		push	af
 		push	bc
@@ -19514,7 +19519,7 @@ sub_990E:
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
 loc_991D:
 		call	sub_9926
-		ld	(tmpChar), a
+		ld	(tmpChar1), a
 		jp	loc_99B8
 ; End of function sub_990E
 ; =============== S U B	R O U T	I N E =======================================
@@ -19525,7 +19530,7 @@ sub_9926:
 loc_9929:				; Direct console I/O
 		ld	c, 6
 		ld	e, 255		; ReadChar
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		or	a		; Anything returned?
 		jr	z, loc_9967	; No.
 		cp	7		; Is it	Ctrl-G?
@@ -19533,25 +19538,25 @@ loc_9929:				; Direct console I/O
 loc_9937:				; Direct console I/O
 		ld	c, 6
 		ld	e, 255		; ReadChar
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		or	a		; Anything returned?
 		jr	z, loc_994B	; No.
 		cp	7		; Is it	Ctrl-G?
 		jr	z, loc_9929	; Yes.
 		ld	c, 4		; Auxiliary (punch) out
 		ld	e, a
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 loc_994B:				; Check	reader device availability
 		call	InPort6
 		jr	z, loc_9937
 		ld	c, 3		; Auxiliary (reader) input
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		or	a
 		jr	z, loc_9937
 		and	01111111b	; Strip	out high bit
 		ld	e, a		; WriteChar
 		ld	c, 6		; Direct console I/O
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		jp	loc_9937
 loc_9963:
 		pop	bc
@@ -19605,7 +19610,7 @@ loc_99B8:
 		ld	(Time),	a
 		ld	(byte_04FD), a
 		ld	a, c
-		ld	(CmdLineSz), a
+		ld	(CmdLineSz), a	; Size of the command line
 		ret
 loc_99C7:
 		cp	127
@@ -19744,32 +19749,32 @@ sub_9A7F:
 		add	hl, hl
 		pop	de
 		add	hl, de
-		ld	(GlobalsFCB+33), hl
-		ld	hl,  GlobalsFCB+35
+		ld	(GlobalsFCB+33), hl ; FCB for the globals file
+		ld	hl,  GlobalsFCB+35 ; FCB for the globals file
 		ld	(hl), 0
 		ret
 ; End of function sub_9A7F
 ; =============== S U B	R O U T	I N E =======================================
-; Read a global	buffer (768B) in (DE)
+; Read a global	buffer (768 Bytes) in (DE)
 GlobalRead:
 		ld	l, 20		; Read sequential
 		jp	GlobalRW
 ; End of function GlobalRead
 ; =============== S U B	R O U T	I N E =======================================
-; Write	a global buffer	(768B) in (DE)
+; Write	a global buffer	(768 Bytes) in (DE)
 GlobalWrite:
 		ld	l, 21		; Write	sequential
-GlobalRW:
+GlobalRW:				; Default drive	for globals
 		ld	a, (GlobalsDR)
 		inc	a
-		ld	(GlobalsFCB), a
+		ld	(GlobalsFCB), a	; FCB for the globals file
 		ld	b, 6		; Read 6x128 regs (1 Global block=768)
 GlobalRW1:				; Set DMA address
 		ld	c, 26
 		push	de
 		push	bc
 		push	hl
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		pop	hl
 		pop	bc
 		push	bc
@@ -19781,8 +19786,8 @@ GlobalRW1:				; Set DMA address
 		add	a, 13		; Reset	disk system
 GlobalRW2:				; BDOS function	in A
 		ld	c, a
-		ld	de, GlobalsFCB
-		call	BDOScall	; Make a call to the CP/M BDOS
+		ld	de, GlobalsFCB	; FCB for the globals file
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		or	a		; Is there an error?
 		jp	nz, Error39	; Disk I/O error
 		pop	hl
@@ -19792,7 +19797,7 @@ GlobalRW2:				; BDOS function	in A
 		ld	a, 6
 		cp	b
 		jp	nz, GlobalRW3
-		ld	hl,  GlobalsFCB+32
+		ld	hl,  GlobalsFCB+32 ; FCB for the globals file
 		inc	(hl)
 GlobalRW3:
 		ld	hl, 128
@@ -19809,7 +19814,7 @@ sub_9AD9:
 		call	sub_9A7F
 		ld	hl, (pGLBBuffer3)
 		ex	de, hl
-		call	GlobalRead	; Read a global	buffer (768B) in (DE)
+		call	GlobalRead	; Read a global	buffer (768 Bytes) in (DE)
 		ret
 ; End of function sub_9AD9
 ; =============== S U B	R O U T	I N E =======================================
@@ -19820,7 +19825,7 @@ sub_9AE7:
 		ld	de, 8
 		add	hl, de
 		ex	de, hl
-		call	GlobalWrite	; Write	a global buffer	(768B) in (DE)
+		call	GlobalWrite	; Write	a global buffer	(768 Bytes) in (DE)
 		ret
 ; End of function sub_9AE7
 ; =============== S U B	R O U T	I N E =======================================
@@ -19992,13 +19997,13 @@ sub_9C00:
 		ld	(Result), a
 		ld	c, 26		; Set DMA address
 		ld	de, Page0Buf
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		ld	a, (byte_A6A5)
 		or	a
 		jr	z, loc_9C3F
 		xor	a
 		ld	(byte_A6A5), a
-		ld	hl, (word_027C)
+		ld	hl, (pTmp9)
 		ld	de, 8
 		sbc	hl, de
 		ld	a, (I1)
@@ -20013,21 +20018,21 @@ loc_9C29:
 		ld	de, Backslash
 		ldir
 		ld	de, Backslash
-		ld	a, (RoutinesDR)
+		ld	a, (RoutinesDR)	; Default drive	for routines
 		inc	a
 		ld	(de), a
 		ld	c, 17		; Search for first
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 loc_9C3F:
-		ld	de, (Ptr1)
-		ld	a, (RoutinesDR)
+		ld	de, (pTmp2)
+		ld	a, (RoutinesDR)	; Default drive	for routines
 		inc	a
 		ld	(de), a
 		ld	c, 17		; Search for first
-		ld	a, (tmpChr)
+		ld	a, (tmpChar2)
 		add	a, c
 		ld	c, a
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		cp	255
 		jp	nz, loc_9C5D
 		ld	a, 0
@@ -20045,7 +20050,7 @@ loc_9C5D:
 		ld	d, 0
 		add	hl, de
 		inc	hl
-		ld	(tmpPtr), hl
+		ld	(pTmp1), hl
 		ret
 ; End of function sub_9C00
 ; =============== S U B	R O U T	I N E =======================================
@@ -20055,14 +20060,14 @@ FFirst:
 		call	PrepFCB		; Prepares the FCB
 		ld	c, 26		; Set DMA address
 		ld	de, Page0BUF
-		call	BDOScall	; Make a call to the CP/M BDOS
-		ld	hl, (pFCBAddr)
-		ld	a, (Drive)
+		call	BDOScall	; Makes	a call to the CP/M BDOS
+		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
 		ex	de, hl
 		ld	c, 17		; Search for first
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		inc	a
 		jp	nz, FFirst1
 		ld	(Result), a
@@ -20076,19 +20081,19 @@ FFirst1:
 ; Reset	disk system
 DiskReset:
 		ld	c, 13		; Reset	disk system
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		ret
 ; End of function DiskReset
 ; =============== S U B	R O U T	I N E =======================================
 ; Compute file size
 FSize:
-		ld	de, (pFCBAddr)
-		ld	a, (Drive)
+		ld	de, (pFCBAddr)	; Pointer to FCB address
+		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(de), a
 		ld	c, 23h		; Compute file size
-		call	BDOScall	; Make a call to the CP/M BDOS
-		ld	hl, (pFCBAddr)
+		call	BDOScall	; Makes	a call to the CP/M BDOS
+		ld	hl, (pFCBAddr)	; Pointer to FCB address
 		ld	bc, 33
 		add	hl, bc
 		ld	e, (hl)
@@ -20110,22 +20115,22 @@ FRndRead:
 		cp	0
 		jp	z, Error48	; Invalid parameter
 		ex	de, hl
-		ld	hl, (pFCBAddr)
+		ld	hl, (pFCBAddr)	; Pointer to FCB address
 		ld	bc, 33
 		add	hl, bc
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (pFRWBuffer)
+		ld	hl, (pFRWBuffer) ; Pointer to file R/W buffer
 		ex	de, hl
 		ld	c, 1Ah		; Set DMA address
-		call	BDOScall	; Make a call to the CP/M BDOS
-		ld	de, (pFCBAddr)
-		ld	a, (Drive)
+		call	BDOScall	; Makes	a call to the CP/M BDOS
+		ld	de, (pFCBAddr)	; Pointer to FCB address
+		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(de), a
 		ld	c, 33		; Random read
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		or	a
 		ret	z
 		jp	Error48		; Invalid parameter
@@ -20134,36 +20139,36 @@ FRndRead:
 ; Create file
 FCreate:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (pFCBAddr)
-		ld	a, (Drive)
+		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
 		ex	de, hl
 		ld	c, 22		; Make file
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		inc	a
 		ret	nz
 		jp	Error09		; Directory full
 ; End of function FCreate
 ; =============== S U B	R O U T	I N E =======================================
-; Sequential write file
+; Sequential write file	(5 retries)
 FSeqWrite:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (pFRWBuffer)
+		ld	hl, (pFRWBuffer) ; Pointer to file R/W buffer
 		ex	de, hl
 		ld	c, 26		; Set DMA address
-		call	BDOScall	; Make a call to the CP/M BDOS
-		ld	hl, (pFCBAddr)
-		ld	a, (Drive)
+		call	BDOScall	; Makes	a call to the CP/M BDOS
+		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
 		ld	b, 5
-FSeqWrite2:
+FSeqWrite2:				; Pointer to FCB address
 		ld	hl, (pFCBAddr)
 		ex	de, hl
 		ld	c, 21		; Write	next record
 		push	bc
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		or	a
 		pop	bc
 		ret	z
@@ -20181,19 +20186,19 @@ Null3:
 ; =============== S U B	R O U T	I N E =======================================
 ; Close	globals	file
 GFClose:
-		ld	hl, GlobalsFCB
-		ld	(pFCBAddr), hl
-		ld	a, (GlobalsDR)
-		ld	(Drive), a
+		ld	hl, GlobalsFCB	; FCB for the globals file
+		ld	(pFCBAddr), hl	; Pointer to FCB address
+		ld	a, (GlobalsDR)	; Default drive	for globals
+		ld	(Drive), a	; Current disk drive
 FClose:					; Close	file
 		call	SSChk
-		ld	hl, (pFCBAddr)
-		ld	a, (Drive)
+		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
 		ex	de, hl
 		ld	c, 16		; Close	file
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		ret
 ; End of function GFClose
 ; =============== S U B	R O U T	I N E =======================================
@@ -20203,12 +20208,12 @@ GFOpen:
 		call	PrepFCB		; Prepares the FCB
 FOpen:					; Open file
 		ld	hl, (pFCBAddr)
-		ld	a, (Drive)
+		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
 		ex	de, hl
 		ld	c, 15		; Open file
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		inc	a
 		ret	nz
 		ld	a, (FCBType)	; 0:Global, 1:Routine, 2:File
@@ -20219,10 +20224,10 @@ FOpen:					; Open file
 ; =============== S U B	R O U T	I N E =======================================
 sub_9D7F:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (pFRWBuffer)
+		ld	hl, (pFRWBuffer) ; Pointer to file R/W buffer
 		ex	de, hl
 		ld	c, 26		; Set DMA address
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		ld	hl, (word_02D4)
 		ld	a, 00010000b
 		and	(hl)
@@ -20230,21 +20235,21 @@ sub_9D7F:
 		ld	a, (hl)
 		and	11101111b
 		ld	(hl), a
-		ld	hl, (pFCBAddr)
+		ld	hl, (pFCBAddr)	; Pointer to FCB address
 		ld	bc, Space
 		add	hl, bc
 		inc	(hl)
-loc_9D9F:
+loc_9D9F:				; Pointer to FCB address
 		ld	hl, (pFCBAddr)
-		ld	a, (Drive)
+		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
 		ex	de, hl
 		ld	c, 20		; Read next record
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		cp	2
 		jp	nc, Error39	; Disk I/O error
-		ld	hl, (pFRWBuffer)
+		ld	hl, (pFRWBuffer) ; Pointer to file R/W buffer
 		ld	de, 0
 		ld	c, 128
 		ld	b, a
@@ -20260,7 +20265,7 @@ loc_9DBB:
 		or	a
 		jp	z, loc_9DD2
 		ld	de, 0
-		ld	hl, (pFRWBuffer)
+		ld	hl, (pFRWBuffer) ; Pointer to file R/W buffer
 		ld	(hl), 1Ah
 loc_9DD2:
 		ex	de, hl
@@ -20271,17 +20276,17 @@ loc_9DD2:
 ; Delete file
 FDelete:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (pFCBAddr)
-		ld	a, (Drive)
+		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
-		ld	hl, (pFCBAddr)
-		ld	a, (Drive)
+		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
 		ex	de, hl
 		ld	c, 19		; Delete file
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		ret
 ; End of function FDelete
 ; =============== S U B	R O U T	I N E =======================================
@@ -20290,9 +20295,9 @@ PrepFCB:
 		ld	a, (FCBType)	; 0:Global, 1:Routine, 2:File
 		or	a
 		jp	nz, PrepFCB1
-		ld	hl, GlobalsFCB
-		ld	(pFCBAddr), hl
-		ld	hl,  GlobalsFCB+12
+		ld	hl, GlobalsFCB	; FCB for the globals file
+		ld	(pFCBAddr), hl	; Pointer to FCB address
+		ld	hl,  GlobalsFCB+12 ; FCB for the globals file
 		ld	(hl), 0
 		ret
 PrepFCB1:
@@ -20307,7 +20312,7 @@ PrepFCB2:
 		ld	d, (hl)
 		ex	de, hl
 		inc	hl
-PrepFCB3:
+PrepFCB3:				; Pointer to FCB address
 		ld	(pFCBAddr), hl
 		push	ix
 		pop	hl
@@ -20322,7 +20327,7 @@ PrepFCB3:
 		add	hl, de
 		push	hl
 		pop	ix
-		ld	hl, (pFCBAddr)
+		ld	hl, (pFCBAddr)	; Pointer to FCB address
 		ex	de, hl
 		push	ix
 		pop	hl
@@ -20412,7 +20417,7 @@ GZero:		db 0, 0, 0
 ibcdTemp0:	db 0, 0, 0, 0, 0
 ibcdTemp1:	db 0, 0, 0, 0, 0
 ibcdUnk02:	db 0, 0, 0, 0, 0
-ibcdDay:	db 0, 0, 0, 0, 0
+ibcdDay:	db 0, 0, 0, 0, 0	; Day in BCD
 ibcdUnk03:	db 0, 0, 0, 0, 0
 ibcd1:		db 0, 0, 0, 0, 0
 ibcdUnk05:	db 0, 0, 0, 0, 0
@@ -20475,7 +20480,7 @@ sRoutinesOn:	db 0Dh,'ROUTINES ON '
 RDrLetter:	db 0
 sGlobalsOn:	db 0Ch,'GLOBALS ON '
 GDrLetter:	db 0
-Minus1:		db 2,'-1'
+Minus1:		db 2,'-1'               ; -1 in M string format
 byte_9FD3:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
@@ -20650,7 +20655,7 @@ word_A636:	dw 0
 word_A638:	dw 0
 word_A63A:	dw 0
 word_A63C:	dw 0
-SymEnd:		dw 0
+SymCount:	dw 0			; Number of symbols defined
 word_A640:	dw 0
 word_A642:	dw 0
 word_A644:	dw 0
@@ -20716,75 +20721,75 @@ Init:
 EnterDate:
 		ld	de, sEnterDate
 		ld	c, 9		; Output string
-		call	BDOScall	; Make a call to the CP/M BDOS
-		ld	de, iBufferSZ
+		call	BDOScall	; Makes	a call to the CP/M BDOS
+		ld	de, iBufferSZ	; Input	buffer size
 		ld	c, 10		; Buffered console input
-		call	BDOScall	; Make a call to the CP/M BDOS
-		ld	hl, iBuffer
+		call	BDOScall	; Makes	a call to the CP/M BDOS
+		ld	hl, iBuffer	; Input	buffer
 		ld	a, (hl)		; Reads	the number of chars typed
 		or	a
 		jp	z, EndInit	; No characters	typed
 		cp	8
 		jp	nz, EnterDate	; Different than 8
 		inc	hl		; Point	to the fist char typed
-		ld	de, 112h	; Month	valilation (1-12)
+		ld	de, 112h	; Month	validation (D=1	E=12)
 		call	ChkDate
 		jp	nz, EnterDate
 		ld	a, b
-		ld	(bbcdMonth), a
+		ld	(bbcdMonth), a	; Month	in BCD
 		ld	a, c
-		ld	(binMonth), a
-		ld	de, 131h	; Day validation (1-31)
+		ld	(binMonth), a	; Month	in binary
+		ld	de, 131h	; Day validation (D=1 E=31)
 		call	ChkDate
 		jp	nz, EnterDate
 		ld	a, b
-		ld	(ibcdDay+4), a
-		ld	de, 8191h	; Year validation 81-91
+		ld	(ibcdDay+4), a	; Day in BCD
+		ld	de, 8191h	; Year validation (D=81	E=91)
 		call	ChkDate
 		jp	nz, EnterDate
 		ld	a, b
-		ld	(ibcdYear+4), a
+		ld	(ibcdYear+4), a	; Year in BCD
 		ld	a, c
-		ld	(binYear), a
-		ld	a, (binMonth)
+		ld	(binYear), a	; Year in binary
+		ld	a, (binMonth)	; Month	in binary
 		dec	a
 		add	a, a
 		ld	c, a
 		ld	b, 0
 		ld	hl, nDaysTableW
 		add	hl, bc
-		ld	de,  ibcdDay+3
+		ld	de,  ibcdDay+3	; Day in BCD
 		ex	de, hl
 		ld	c, 2
 		call	AbcdDEHL	; Adds two C bytes long	BCDs pointed by	(DE) and (HL)
 					; result goes in the BCD pointed by (HL)
-		ld	a, (binYear)
-		cp	84		; 84 was a leap	year
+		ld	a, (binYear)	; Year in binary
+		cp	84		; 1984 was a leap year
 		jp	z, EnterDate1
-		cp	88		; 88 was a leap	year
+		cp	88		; 1988 was a leap year
 		jp	nz, EnterDate2
-EnterDate1:
+EnterDate1:				; Month	in binary
 		ld	a, (binMonth)
 		cp	3
 		jp	c, EnterDate2
 		call	IbcdHL		; Increments by	1 the C	bytes long BCD pointed by (HL)
-EnterDate2:
+EnterDate2:				; Year in BCD
 		ld	a, (ibcdYear+4)
-		sub	81h
-		ld	(ibcdYear+4), a
-		ld	hl, ibcdYear
-		ld	de, ibcdV365
+		sub	129
+		ld	(ibcdYear+4), a	; Year in BCD
+		ld	hl, ibcdYear	; Year in BCD
+		ld	de, ibcdV365	; 365 in BCD
 		ld	c, 5
 		call	MbcdDEHL	; Multiplies two C bytes long BCD pointed by DE	and HL
-					; result goes in MResult
-		ld	hl, ibcdDay
+					; result goes in ibcdResult
+		ld	hl, ibcdDay	; Day in BCD
 		ld	de, ibcdResult	; Operation result
 		call	AbcdDEHL	; Adds two C bytes long	BCDs pointed by	(DE) and (HL)
 					; result goes in the BCD pointed by (HL)
-		ld	de, ibcdV51134
+		ld	de, ibcdV51134	; BCD 51134 = 31/12/80
 		call	AbcdDEHL	; Adds two C bytes long	BCDs pointed by	(DE) and (HL)
 					; result goes in the BCD pointed by (HL)
-		ld	a, (binYear)
+		ld	a, (binYear)	; Year in binary
 		cp	85
 		jp	c, EndInit
 		cp	89
@@ -20792,19 +20797,19 @@ EnterDate2:
 		call	IbcdHL		; Increments by	1 the C	bytes long BCD pointed by (HL)
 EnterDate3:				; Increments by	1 the C	bytes long BCD pointed by (HL)
 		call	IbcdHL
-EndInit:
+EndInit:				; New line x 3
 		ld	de, sNewLinex3
 		ld	c, 9		; Output string
-		call	BDOScall	; Make a call to the CP/M BDOS
+		call	BDOScall	; Makes	a call to the CP/M BDOS
 		jp	Start		; Startup initializations
 ; End of function Init
 ; =============== S U B	R O U T	I N E =======================================
 ChkDate:
 		ld	a, (hl)		; Gets the digit pointed by HL
-		cp	30h		; '0'
-		jp	c, ChkDate2
-		cp	Colon
-		jp	nc, ChkDate2
+		cp	30h		; Compares with	'0'
+		jp	c, ChkDate2	; If smaller there's an error
+		cp	Colon		; Compares with	':'
+		jp	nc, ChkDate2	; If not smaller there's an error
 		and	00001111b	; Clears the high 4 bits
 		ld	c, a		; Saves	A on C
 		rla			; Slides the digit left	4 bits
@@ -20818,13 +20823,13 @@ ChkDate:
 		add	a, c
 		add	a, a
 		ld	c, a		; ... and saves	on C
-		inc	hl		; Advance one digit
+		inc	hl		; Advances one digit
 		ld	a, (hl)
-		cp	30h		; '0'
-		jp	c, ChkDate2
-		cp	Colon
-		jp	nc, ChkDate2
-		and	00001111b
+		cp	30h		; Compares with	'0'
+		jp	c, ChkDate2	; If smaller there's an error
+		cp	Colon		; Compares with	':'
+		jp	nc, ChkDate2	; If not smaller there's an error
+		and	00001111b	; Clears the high 4 bits
 		push	af		; Saves	A on the stack
 		or	b
 		ld	b, a		; Saves	BCD version on B
@@ -20839,10 +20844,10 @@ ChkDate:
 		cp	e		; Checks the BCD higher	limit
 		jp	c, ChkDate1
 		jp	nz, ChkDate2
-ChkDate1:				; Theres no error A=0x00
+ChkDate1:				; Theres no error, A<-0
 		xor	a
 		jp	ChkDate3
-ChkDate2:				; There's error A=0x01
+ChkDate2:				; There's error, A<-1
 		ld	a, 1
 ChkDate3:				; Updates the Zero flag
 		or	a
@@ -20855,8 +20860,8 @@ sEnterDate:	db 0Dh,0Ah
 		db 'Enter today',27h,'s date (mm/dd/yy): $'
 sEnterTime:	db 0Dh,0Ah		; Not used in CP/M
 		db 'Enter the current time (hh:mm): $'
-sNewLinex3:	db 0Dh,	0Ah, 0Ah, 0Ah, 24h
-ibcdYear:	db 0, 0, 0, 0, 0
+sNewLinex3:	db 0Dh,	0Ah, 0Ah, 0Ah, 24h ; New line x	3
+ibcdYear:	db 0, 0, 0, 0, 0	; Year in BCD
 		db 0, 0, 0, 0, 0
 ; ----
 nDaysTableW:	db 0, 0
@@ -20873,15 +20878,15 @@ nDaysTableW:	db 0, 0
 		db 3, 34h
 ; ----
 ibcdV60:	db 0, 0, 0, 0, 60h
-ibcdV365:	db 0, 0, 0, 3, 65h
-ibcdV51134:	db 0, 0, 5, 11h, 34h	; 51134	= 31/12/80
-iBufferSZ:	db 20
-iBuffer:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+ibcdV365:	db 0, 0, 0, 3, 65h	; 365 in BCD
+ibcdV51134:	db 0, 0, 5, 11h, 34h	; BCD 51134 = 31/12/80
+iBufferSZ:	db 20			; Input	buffer size
+iBuffer:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0 ; Input buffer
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0
-bbcdMonth:	db 0
-binMonth:	db 0
-binYear:	db 0
+bbcdMonth:	db 0			; Month	in BCD
+binMonth:	db 0			; Month	in binary
+binYear:	db 0			; Year in binary
 sGreet:		db 'Z80 Mumps - Version 4.06',0Dh,0Ah
 		db 'rebuilt in Feb/2014 by Marcelo Dantas',0Dh,0Ah
 		db 'marcelo.f.dantas@gmail.com'
