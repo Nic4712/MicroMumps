@@ -63,7 +63,7 @@ GlobalsFCB:	db 0			; FCB for the globals file
 		db 0, 0, 0, 0, 0, 0, 0,	0
 AutoexecFlag:	db 0			; Runs a pre-defined command line when loading
 CmdLineSz:	db 0			; Size of the command line
-CmdLine:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+D0Buffer:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0 ; Device 0 (console) buffer
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
@@ -106,7 +106,7 @@ pName:		dw 0
 word_029A:	dw 0
 pIndex:		dw 0
 		db 0
-		db 0
+pDevBufRead:	db 0
 		db 0
 		db 0
 SetBs:		dw 0
@@ -130,15 +130,15 @@ word_02C8:	dw 0
 word_02CC:	dw 0
 		dw 0
 word_02D0:	dw 0
-pFCBAddr:	dw 0			; Pointer to FCB address
-word_02D4:	dw 0
-word_02D6:	dw 0
-pDevice:	dw 0
-pDevX:		dw 0
-pDevY:		dw 0
-word_02DE:	dw 0
-word_02E0:	dw 0
-word_02E2:	dw 0
+pDevFileName:	dw 0
+pDevIsOpen:	dw 0			; 0=Closed 1=Open
+pDevType:	dw 0			; 1=R/O	2=R/W
+pDevDrive:	dw 0
+pDevX:		dw 0			; X position (BCD5)
+pDevY:		dw 0			; Y position (BCD5)
+pDevEOF:	dw 0
+pDevBuffer:	dw 0
+pDevRead:	dw 0
 word_02E4:	dw 0
 pFRWBuffer:	dw 0			; Pointer to file R/W buffer
 pGLBBuffer1:	dw 0
@@ -341,7 +341,7 @@ byte_0533:	db 0, 0, 0
 		db 0, 0, 0
 byte_053F:	db 0, 0, 0
 glbptrUnk:	db 0, 0, 0
-byte_0545:	db 0
+BytesToRead:	db 0
 byte_0546:	db 0
 byte_0547:	db 0
 VariableFL:	db 0			; 0 - Function : 1 - Variable
@@ -626,7 +626,7 @@ NoGreet:
 ; =============== S U B	R O U T	I N E =======================================
 ; Prepare initial execution
 Main:
-		xor	a
+		xor	a		; Set A	to 0
 		ld	(Result), a
 		ld	(Case),	a
 		ld	(bmActFL), a
@@ -654,7 +654,7 @@ Main:
 		ld	(byte_A6A4), a
 		ld	(byte_A69F), a
 		ld	a, 255
-		ld	(byte_0545), a
+		ld	(BytesToRead), a
 		ld	a, 0
 		ld	(SetSW), a
 		ld	(GotoFL), a
@@ -803,8 +803,8 @@ Input4:
 		jp	z, Input2
 		ld	hl, 0
 		ld	(word_A636), hl
-Input5:
-		ld	hl, CmdLine
+Input5:					; Device 0 (console) buffer
+		ld	hl, D0Buffer
 		ld	(word_02B0), hl
 		dec	hl
 		ld	(pStkPos), hl
@@ -892,11 +892,11 @@ Input12:
 		ld	c, 5
 		call	IbcdHL		; Increments by	1 the C	bytes long BCD pointed by (HL)
 		jp	Input15
-Input13:
+Input13:				; X position (BCD5)
 		ld	hl, (pDevX)
 		ld	de, ibcdV0
 		call	Copy5DEHL	; Copy 5 bytes from (DE) to (HL) ; SetI
-		ld	hl, (pDevY)
+		ld	hl, (pDevY)	; Y position (BCD5)
 		ld	c, 5
 		call	IbcdHL		; Increments by	1 the C	bytes long BCD pointed by (HL)
 		ld	c, 5
@@ -1457,7 +1457,7 @@ ecRead2:
 		call	DoTimeout	; Does a timeout after a command
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3C2E
+		call	z, ReadChar	; Reads	a variable in the format *V
 		jp	ecRead6
 ecRead3:				; Checks if needed to output !,	# or ?x
 		call	ChkCRLFSP
@@ -1470,7 +1470,7 @@ ecRead3:				; Checks if needed to output !,	# or ?x
 		jp	nz, ecRead4
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3CCC
+		call	z, PreRead	; Handles the writes needed prior to read
 		jp	ecRead6
 ecRead4:				; Check	for local variable name
 		call	LVarName
@@ -1484,14 +1484,14 @@ ecRead4:				; Check	for local variable name
 		call	IntExp		; Integer-Value	expression
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_4E07
+		call	z, NumToRead	; Obtains the number of	characters to read
 ecRead5:
 		ld	a, 1
 		ld	(TimeoutFL), a
 		call	DoTimeout	; Does a timeout after a command
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3CD3
+		call	z, ReadVar	; Reads	a variable
 ecRead6:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
@@ -3655,7 +3655,7 @@ evX:
 		ret
 evX1:
 		ld	de, ibcdTemp0
-		ld	hl, (pDevX)
+		ld	hl, (pDevX)	; X position (BCD5)
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
 		jp	PushChar
 ; End of function evX
@@ -3675,7 +3675,7 @@ evY:
 		ret
 evY1:
 		ld	de, ibcdTemp0
-		ld	hl, (pDevY)
+		ld	hl, (pDevY)	; Y position (BCD5)
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
 		jp	PushChar
 ; End of function evY
@@ -3877,9 +3877,9 @@ StrLit:
 		or	a
 		jp	nz, StrLit2
 		ld	hl, ibcdUnk05
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	hl, ibcd1
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	hl, ibcdUnk05
 		ld	a, (hl)
 		and	11110000b
@@ -3990,9 +3990,9 @@ loc_2002:
 		or	a
 		jp	nz, loc_203A
 		ld	hl, ibcdUnk05
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	hl, ibcd1
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	hl, ibcdUnk05
 		ld	a, (hl)
 		and	11110000b
@@ -5051,7 +5051,7 @@ ZeroToS:
 bfJustify:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, ibcdTemp1
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	a, (Result)
 		cp	1
 		jp	z, loc_298D
@@ -5077,7 +5077,7 @@ loc_2904:
 		ld	c, 5
 		call	SbcdDEHL	; Subtracts two	C bytes	long BCDs pointed by (DE) and (HL)
 					; result goes in the BCD pointed by (HL)
-		call	IntToChar	; Integer to char (0-255)
+		call	BCD5ToChar	; Converts BCD5	pointed	by HL into char	in A
 		ld	(N), a
 		ld	a, (Result)
 		cp	0
@@ -5116,13 +5116,13 @@ loc_297E:
 		ret
 loc_298D:
 		ld	hl, ibcdUnk02
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		call	ExprToNum	; Convert expression to	numeric	value
 		ld	hl, ibcdTemp1
 		ld	a, (hl)
 		and	11110000b
 		jp	nz, Error30	; Unimplemented	operation
-		call	IntToChar	; Integer to char (0-255)
+		call	BCD5ToChar	; Converts BCD5	pointed	by HL into char	in A
 		ld	(I6), a
 		ld	a, (Result)
 		cp	0
@@ -5253,10 +5253,10 @@ PrintCRLF:
 		ld	a, 0Ah
 		ld	(tmpChar1), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
-		ld	hl, (pDevX)
+		ld	hl, (pDevX)	; X position (BCD5)
 		ld	de, ibcdV0
 		call	Copy5DEHL	; Copy 5 bytes from (DE) to (HL) ; SetI
-		ld	hl, (pDevY)
+		ld	hl, (pDevY)	; Y position (BCD5)
 		ld	de, ibcdV1
 		ld	c, 5
 		call	AbcdDEHL	; Adds two C bytes long	BCDs pointed by	(DE) and (HL)
@@ -5293,11 +5293,11 @@ PrintFF2:
 		ld	a, 0Ch
 		ld	(tmpChar1), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
-PrintFF3:
+PrintFF3:				; X position (BCD5)
 		ld	hl, (pDevX)
 		ld	de, ibcdV0
 		call	Copy5DEHL	; Copy 5 bytes from (DE) to (HL) ; SetI
-		ld	hl, (pDevY)
+		ld	hl, (pDevY)	; Y position (BCD5)
 		ld	de, ibcdV0
 		call	Copy5DEHL	; Copy 5 bytes from (DE) to (HL) ; SetI
 		ret
@@ -5330,11 +5330,11 @@ sub_2B35:
 HSPC:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	a, (hl)
 		and	11110000b
 		jp	nz, HSPCEnd
-		ld	hl, (pDevX)
+		ld	hl, (pDevX)	; X position (BCD5)
 		ld	de, ibcdTemp0
 		call	SCmp0		; Compares two strings (sets BC=INTLN*257 first)
 		jp	c, HSPCEnd
@@ -5342,13 +5342,13 @@ HSPC:
 		ld	de, ibcdTemp1
 		ld	hl, ibcdTemp0
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
-		ld	hl, (pDevX)
+		ld	hl, (pDevX)	; X position (BCD5)
 		ld	de, ibcdTemp0
 		ex	de, hl
 		ld	c, 5
 		call	SbcdDEHL	; Subtracts two	C bytes	long BCDs pointed by (DE) and (HL)
 					; result goes in the BCD pointed by (HL)
-		ld	hl, (pDevX)
+		ld	hl, (pDevX)	; X position (BCD5)
 		ld	de, ibcdTemp1
 		call	Copy5DEHL	; Copy 5 bytes from (DE) to (HL) ; SetI
 HSPC1:
@@ -5473,11 +5473,11 @@ bfAscii:
 		cp	FALSE
 		jp	z, bfAscii1
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	a, (hl)
 		and	11110000b
 		jp	nz, bfAscii2
-		call	IntToChar	; Integer to char (0-255)
+		call	BCD5ToChar	; Converts BCD5	pointed	by HL into char	in A
 		ld	(N), a
 		ld	a, (Result)
 		cp	FALSE
@@ -5837,7 +5837,7 @@ bfExtract:
 		jp	bfExtract2
 bfExtract1:
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 bfExtract2:
 		ld	de, ibcdTemp1
 		ld	hl, ibcdTemp0
@@ -5846,7 +5846,7 @@ bfExtract2:
 		cp	0
 		jp	z, bfExtract3
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 bfExtract3:
 		dec	ix
 		dec	ix
@@ -5894,10 +5894,10 @@ bfExtract6:
 		ld	de, ibcdTemp1
 		call	SCmp0		; Compares two strings (sets BC=INTLN*257 first)
 		jp	c, bfExtract7
-		call	IntToChar	; Integer to char (0-255)
+		call	BCD5ToChar	; Converts BCD5	pointed	by HL into char	in A
 		ld	(I1), a
 		ld	hl, ibcdTemp1
-		call	IntToChar	; Integer to char (0-255)
+		call	BCD5ToChar	; Converts BCD5	pointed	by HL into char	in A
 		ld	(I2), a
 		ld	hl, I1
 		dec	(hl)
@@ -5942,7 +5942,7 @@ bfFind1:
 		jp	bfFind3
 bfFind2:
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	a, (hl)
 		and	11110000b
 		jp	nz, bfFind1
@@ -5951,7 +5951,7 @@ bfFind2:
 		jp	z, bfFind1
 bfFind3:
 		ld	hl, ibcdTemp0
-		call	IntToChar	; Integer to char (0-255)
+		call	BCD5ToChar	; Converts BCD5	pointed	by HL into char	in A
 		ld	(N), a
 		ld	a, (Result)
 		cp	0
@@ -6263,7 +6263,7 @@ loc_32ED:
 		ld	c, 5
 		call	AbcdDEHL	; Adds two C bytes long	BCDs pointed by	(DE) and (HL)
 					; result goes in the BCD pointed by (HL)
-		call	IntToChar	; Integer to char (0-255)
+		call	BCD5ToChar	; Converts BCD5	pointed	by HL into char	in A
 		ld	(N), a
 		ld	a, (Result)
 		cp	0
@@ -6334,14 +6334,14 @@ loc_3379:
 bfChar:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		dec	ix
 		ld	a, (ix+0)
 		ld	(Count), a
 		ld	a, (hl)
 		and	11110000b
 		jp	nz, bfCharEnd
-		call	IntToChar	; Integer to char (0-255)
+		call	BCD5ToChar	; Converts BCD5	pointed	by HL into char	in A
 		ld	(N), a
 		ld	hl, Count
 		inc	(hl)
@@ -6438,7 +6438,7 @@ loc_3412:
 		ld	c, 5
 		call	AbcdDEHL	; Adds two C bytes long	BCDs pointed by	(DE) and (HL)
 					; result goes in the BCD pointed by (HL)
-		call	IntToChar	; Integer to char (0-255)
+		call	BCD5ToChar	; Converts BCD5	pointed	by HL into char	in A
 		ld	(I2), a
 		ld	a, (Result)
 		cp	0
@@ -6662,7 +6662,7 @@ loc_3684:
 		ret
 loc_3689:
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		dec	ix
 		ld	a, (ix+0)
 		ld	(tmpChar2), a
@@ -6674,11 +6674,11 @@ loc_3689:
 		ld	a, (tmpChar2)
 		cp	59h		; 'Y'
 		jp	z, loc_36B6
-		ld	hl, (pDevX)
+		ld	hl, (pDevX)	; X position (BCD5)
 		ld	de, ibcdTemp0
 		call	Copy5DEHL	; Copy 5 bytes from (DE) to (HL) ; SetI
 		jp	loc_3684
-loc_36B6:
+loc_36B6:				; Y position (BCD5)
 		ld	hl, (pDevY)
 		ld	de, ibcdTemp0
 		call	Copy5DEHL	; Copy 5 bytes from (DE) to (HL) ; SetI
@@ -6941,7 +6941,7 @@ sub_38CF:
 bfRandom:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	a, (hl)
 		and	11110000b
 		jp	nz, Error20	; Illegal expression
@@ -7000,7 +7000,7 @@ Write2:
 		ld	hl, ibcdTemp0
 		ld	a, (Count)
 		call	sub_9535
-		ld	hl, (pDevX)
+		ld	hl, (pDevX)	; X position (BCD5)
 		ld	de, ibcdTemp0
 		ld	c, 5
 		call	AbcdDEHL	; Adds two C bytes long	BCDs pointed by	(DE) and (HL)
@@ -7070,7 +7070,7 @@ bcElseE:
 bcHang:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, HangTime
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	a, (hl)
 		and	11110000b
 		jp	nz, bcHangE
@@ -7309,7 +7309,7 @@ loc_3BA3:
 sub_3BAC:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_570D
-		ld	hl, (word_02D4)
+		ld	hl, (pDevIsOpen) ; 0=Closed 1=Open
 		ld	a, (hl)
 		or	a
 		jp	nz, loc_3BC6
@@ -7363,71 +7363,72 @@ loc_3C20:
 		ret
 ; End of function sub_3BAC
 ; =============== S U B	R O U T	I N E =======================================
-sub_3C2E:
+; Reads	a variable in the format *V
+ReadChar:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, (Result)
 		ld	(byte_04FD), a
 		or	a
-		jp	z, loc_3C59
+		jp	z, ReadChar3
 		ld	a, (IfSW)
 		or	a
-		jp	nz, loc_3C4F
-loc_3C42:
+		jp	nz, ReadChar2
+ReadChar1:
 		ld	(pTmp5), ix
 		ld	hl, ibcdVmin1
 		call	CharToStr	; Convert char (0-255) to string and push it
-		jp	loc_3CB9
-loc_3C4F:
+		jp	ReadCharEnd
+ReadChar2:
 		ld	a, 0
 		ld	(Time),	a
 		ld	a, 1
 		ld	(Wait),	a
-loc_3C59:
-		ld	hl, (word_02D6)
+ReadChar3:				; 1=R/O	2=R/W
+		ld	hl, (pDevType)
 		ld	a, (hl)
 		cp	1
-		jp	z, loc_3CB9
+		jp	z, ReadCharEnd
 		ld	a, (IODevice)
 		or	a
-		jp	nz, loc_3C7E
+		jp	nz, ReadChar5
 		call	sub_990E
-loc_3C6C:
+ReadChar4:
 		ld	a, (Result)
 		or	a
-		jp	z, loc_3CA7
+		jp	z, ReadChar8
 		ld	a, (IfSW)
 		cp	0
-		jp	z, loc_3C42
-		jp	loc_3CA7
-loc_3C7E:
+		jp	z, ReadChar1
+		jp	ReadChar8
+ReadChar5:
 		ld	a, (IODevice)
 		cp	5
-		jp	nz, loc_3C8C
+		jp	nz, ReadChar6
 		call	sub_9446
-		jp	loc_3C6C
-loc_3C8C:
-		ld	hl, (word_02D4)
+		jp	ReadChar4
+ReadChar6:				; 0=Closed 1=Open
+		ld	hl, (pDevIsOpen)
 		ld	a, (hl)
 		and	00001000b
-		jp	nz, loc_3C9D
-		ld	hl, (word_02DE)
+		jp	nz, ReadChar7
+		ld	hl, (pDevEOF)
 		ld	a, (hl)
 		ld	hl, (word_02E4)
 		ld	(hl), a
-loc_3C9D:
+ReadChar7:
 		call	sub_5112
-		ld	hl, (word_02D4)
+		ld	hl, (pDevIsOpen) ; 0=Closed 1=Open
 		ld	a, (hl)
 		or	00001000b
 		ld	(hl), a
-loc_3CA7:
+ReadChar8:
 		ld	(pTmp5), ix
 		ld	a, (tmpChar1)
 		call	IntToStr	; Convert integer to string and	push it
-		ld	hl, (pDevX)
+		ld	hl, (pDevX)	; X position (BCD5)
 		ld	c, 5
 		call	IbcdHL		; Increments by	1 the C	bytes long BCD pointed by (HL)
-loc_3CB9:
+ReadCharEnd:
 		ld	hl, (pTmp5)
 		ld	(pTmp1), hl
 		ld	a, 1
@@ -7436,18 +7437,20 @@ loc_3CB9:
 		xor	a
 		ld	(byte_04B3), a
 		ret
-; End of function sub_3C2E
+; End of function ReadChar
 ; =============== S U B	R O U T	I N E =======================================
-sub_3CCC:
+; Handles the writes needed prior to read
+PreRead:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	Write
 		ret
-; End of function sub_3CCC
+; End of function PreRead
 ; =============== S U B	R O U T	I N E =======================================
-sub_3CD3:
+; Reads	a variable
+ReadVar:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	(pTmp5), ix
-		ld	hl, (word_02D6)
+		ld	hl, (pDevType)	; 1=R/O	2=R/W
 		ld	a, (hl)
 		cp	1
 		jp	z, Error51	; Reading from write only device
@@ -7455,37 +7458,37 @@ sub_3CD3:
 		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	a, (IODevice)
 		or	a
-		jp	z, loc_3CF3
+		jp	z, ReadVar1
 		cp	5
-		jp	nz, loc_3D10
-loc_3CF3:
+		jp	nz, ReadVar2
+ReadVar1:
 		ld	a, (Result)
 		or	a
-		jp	z, loc_3D19
+		jp	z, ReadVar3
 		ld	a, (IfSW)
 		or	a
-		jp	z, loc_3D71
+		jp	z, ReadVar6
 		xor	a
 		ld	(Time),	a
 		ld	a, 1
 		ld	(Wait),	a
 		ld	(byte_04FD), a
-		jp	loc_3D19
-loc_3D10:
-		ld	hl, (word_02D4)
+		jp	ReadVar3
+ReadVar2:				; 0=Closed 1=Open
+		ld	hl, (pDevIsOpen)
 		ld	a, (hl)
 		and	00001000b
-		jp	nz, loc_3D21
-loc_3D19:
-		ld	hl, (word_02DE)
+		jp	nz, ReadVar4
+ReadVar3:
+		ld	hl, (pDevEOF)
 		ld	a, (hl)
 		ld	hl, (word_02E4)
 		ld	(hl), a
-loc_3D21:
+ReadVar4:
 		call	sub_5112
 		ld	a, (tmpChar1)
 		cp	0Dh
-		jp	z, loc_3D71
+		jp	z, ReadVar6
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		cp	255
 		jp	z, Error11	; String too long
@@ -7495,26 +7498,26 @@ loc_3D21:
 		ld	(ix+0),	a
 		inc	ix
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
-		ld	hl, byte_0545
+		ld	hl, BytesToRead
 		cp	(hl)
-		jp	z, loc_3D71
+		jp	z, ReadVar6
 		ld	a, (tmpChar1)
 		cp	1Ah
-		jp	nz, loc_3D21
+		jp	nz, ReadVar4
 		ld	a, (IODevice)
 		cp	5
-		jp	nz, loc_3D5D
-		jp	loc_3D21
-loc_3D5D:				; Length of the	current	string (plus 1)
+		jp	nz, ReadVar5
+		jp	ReadVar4
+ReadVar5:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		cp	1
-		jp	z, loc_3D71
+		jp	z, ReadVar6
 		ld	hl, StrLen	; Length of the	current	string (plus 1)
 		dec	(hl)
 		dec	ix
 		ld	a, (ix+0)
 		ld	(tmpChar1), a
-loc_3D71:				; Length of the	current	string (plus 1)
+ReadVar6:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		ld	(ix+0),	a
 		inc	ix
@@ -7522,24 +7525,24 @@ loc_3D71:				; Length of the	current	string (plus 1)
 		inc	ix
 		ld	a, (IODevice)
 		or	a
-		jp	z, loc_3D99
+		jp	z, ReadVarEnd
 		ld	a, (tmpChar1)
 		cp	1Ah
-		jp	z, loc_3D99
-loc_3D8E:
+		jp	z, ReadVarEnd
+ReadVar7:
 		call	sub_5112
 		ld	a, (tmpChar1)
 		cp	0Ah
-		jp	nz, loc_3D8E
-loc_3D99:
-		ld	hl, (word_02D4)
+		jp	nz, ReadVar7
+ReadVarEnd:				; 0=Closed 1=Open
+		ld	hl, (pDevIsOpen)
 		ld	a, (hl)
 		or	00001000b
 		ld	(hl), a
 		ld	hl, ibcdTemp0
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		call	sub_9535
-		ld	hl, (pDevX)
+		ld	hl, (pDevX)	; X position (BCD5)
 		ld	de, ibcdTemp0
 		ld	c, 5
 		call	AbcdDEHL	; Adds two C bytes long	BCDs pointed by	(DE) and (HL)
@@ -7552,9 +7555,9 @@ loc_3D99:
 		xor	a
 		ld	(byte_04B3), a
 		ld	a, 255
-		ld	(byte_0545), a
+		ld	(BytesToRead), a
 		ret
-; End of function sub_3CD3
+; End of function ReadVar
 ; =============== S U B	R O U T	I N E =======================================
 ; Clear	off transpt info (AC69)
 ClrTRInfo:
@@ -7850,7 +7853,7 @@ bcClose:
 		cp	1
 		jp	nz, Error48	; Invalid parameter
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 bcClose1:
 		dec	ix
 		ld	a, (ix+0)
@@ -7864,7 +7867,7 @@ bcClose1:
 		ld	hl, DeviceInUse
 		cp	(hl)
 		jp	c, bcClose5
-		ld	hl, (pDevice)
+		ld	hl, (pDevDrive)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -7873,15 +7876,15 @@ bcClose1:
 		ld	(Drive), a	; Current disk drive
 		inc	hl
 		ld	(pIndex), hl
-		ld	(pFCBAddr), hl	; Pointer to FCB address
-		ld	hl, (word_02D4)
+		ld	(pDevFileName),	hl
+		ld	hl, (pDevIsOpen) ; 0=Closed 1=Open
 		ld	a, (hl)
 		and	00000010b
 		jp	z, bcClose3
 		ld	a, (hl)
 		and	00000100b
 		jp	nz, bcClose2
-		ld	hl, (word_02E2)
+		ld	hl, (pDevRead)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -7889,7 +7892,7 @@ bcClose1:
 		ld	(pTmp1), hl
 		ld	(hl), 1Ah
 bcClose2:
-		ld	hl, (word_02E0)
+		ld	hl, (pDevBuffer)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -7908,8 +7911,8 @@ bcClose3:
 		jp	bcClose5
 bcClose4:				; Close	file
 		call	FClose
-bcClose5:
-		ld	hl, (word_02D4)
+bcClose5:				; 0=Closed 1=Open
+		ld	hl, (pDevIsOpen)
 		ld	(hl), 0
 		ld	a, (DeviceInUse)
 		ld	hl, IODevice
@@ -7927,7 +7930,7 @@ bcCloseEnd:
 bcOpen:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_570D
-		ld	hl, (word_02D4)
+		ld	hl, (pDevIsOpen) ; 0=Closed 1=Open
 		ld	(hl), 0
 		ld	a, (DeviceInUse)
 		cp	1
@@ -8033,7 +8036,7 @@ loc_419E:
 		ld	hl, byte_A67A
 		call	sub_97D5
 loc_41A4:
-		ld	hl, (pDevice)
+		ld	hl, (pDevDrive)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -8050,17 +8053,17 @@ loc_41A4:
 		cp	1
 		jp	nz, loc_41D3
 		call	FOpen		; Open file
-		ld	hl, (word_02D6)
+		ld	hl, (pDevType)	; 1=R/O	2=R/W
 		ld	(hl), 2
 		jp	loc_41DB
 loc_41D3:				; Create file
 		call	FCreate
-		ld	hl, (word_02D6)
+		ld	hl, (pDevType)	; 1=R/O	2=R/W
 		ld	(hl), 1
 loc_41DB:
 		call	sub_57BC
-loc_41DE:
-		ld	hl, (word_02D4)
+loc_41DE:				; 0=Closed 1=Open
+		ld	hl, (pDevIsOpen)
 		ld	a, (hl)
 		or	00000001b
 		ld	(hl), a
@@ -8313,7 +8316,7 @@ loc_4399:
 bfTextO:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	c, 5
 		call	lZtest		; Tests	a C bytes long BCD pointed by (HL) for zero
 		jp	nz, bfTextO1
@@ -8797,7 +8800,7 @@ Timeout:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	ExprToInt	; Convert expression to	integer
 		ld	hl, HangTime
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		xor	a
 		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		ld	a, (Locks)
@@ -9299,17 +9302,17 @@ bfzExists:
 		ld	(FCBType), a	; 0:Global, 1:Routine, 2:File
 		ld	a, (RoutinesDR)	; Default drive	for routines
 		ld	(Drive), a	; Current disk drive
-		ld	hl, (pDevice)
+		ld	hl, (pDevDrive)
 		ld	(pIndex), hl
 		ld	hl, Backslash
 		ld	(pTmp1), hl
 		ld	hl, pTmp1
-		ld	(pDevice), hl
+		ld	(pDevDrive), hl
 		call	FFirst		; Find first file
 		ld	a, (Result)
 		call	IntToStr	; Convert integer to string and	push it
 		ld	hl, (pIndex)
-		ld	(pDevice), hl
+		ld	(pDevDrive), hl
 		ret
 ; End of function bfzExists
 ; =============== S U B	R O U T	I N E =======================================
@@ -9509,26 +9512,27 @@ loc_4DF7:
 		ret
 ; End of function sub_4DB3
 ; =============== S U B	R O U T	I N E =======================================
-sub_4E07:
+; Obtains the number of	characters to read
+NumToRead:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	c, 5
 		call	lZtest		; Tests	a C bytes long BCD pointed by (HL) for zero
 		jp	z, Error55	; Invalid read count
 		ld	a, (hl)
 		and	11110000b
 		jp	nz, Error55	; Invalid read count
-		call	IntToChar	; Integer to char (0-255)
-		ld	(byte_0545), a
+		call	BCD5ToChar	; Converts BCD5	pointed	by HL into char	in A
+		ld	(BytesToRead), a
 		ld	a, (Result)
 		cp	1
 		jp	z, locret_4E31
 		ld	a, 255
-		ld	(byte_0545), a
+		ld	(BytesToRead), a
 locret_4E31:
 		ret
-; End of function sub_4E07
+; End of function NumToRead
 ; =============== S U B	R O U T	I N E =======================================
 ; Body of $ZCHECK function
 bfcCheck:
@@ -9588,7 +9592,7 @@ sub_4E86:
 sub_4E9C:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		call	CharToStr	; Convert char (0-255) to string and push it
 		call	CharToStr	; Convert char (0-255) to string and push it
 		ret
@@ -9880,7 +9884,7 @@ sub_5112:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (word_02E4)
 		ex	de, hl
-		ld	hl, (word_02DE)
+		ld	hl, (pDevEOF)
 		ld	a, (de)
 		cp	(hl)
 		jp	nz, loc_5175
@@ -9896,7 +9900,7 @@ loc_512E:
 		call	sub_94A7
 		jp	loc_5164
 loc_513C:
-		ld	hl, (pDevice)
+		ld	hl, (pDevDrive)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -9904,14 +9908,14 @@ loc_513C:
 		ld	a, (hl)
 		ld	(Drive), a	; Current disk drive
 		inc	hl
-		ld	(pFCBAddr), hl	; Pointer to FCB address
-		ld	hl, (word_02E0)
+		ld	(pDevFileName),	hl
+		ld	hl, (pDevBuffer)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(pFRWBuffer), hl ; Pointer to file R/W buffer
-		ld	hl, (word_02D4)
+		ld	hl, (pDevIsOpen) ; 0=Closed 1=Open
 		ld	a, (hl)
 		and	00000010b
 		jp	z, loc_5161
@@ -9921,16 +9925,16 @@ loc_5161:
 loc_5164:
 		ld	hl, (word_02E4)
 		ld	(hl), 0
-		ld	hl, (word_02E0)
+		ld	hl, (pDevBuffer)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (word_02E2)
+		ld	hl, (pDevRead)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
 loc_5175:
-		ld	hl, (word_02E2)
+		ld	hl, (pDevRead)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -9951,7 +9955,7 @@ endif
 		inc	hl
 		ld	(pTmp1), hl
 		ex	de, hl
-		ld	hl, (word_02E2)
+		ld	hl, (pDevRead)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
@@ -10127,10 +10131,10 @@ loc_52FE:
 		cp	0
 		jp	z, loc_530C
 		ld	hl, ibcdTemp1
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 loc_530C:
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	a, (Result)
 		cp	1
 		jp	z, loc_5323
@@ -10196,7 +10200,7 @@ loc_537F:
 		jp	z, loc_53B0
 		ld	c, 5
 		call	DbcdHL		; Decrements by	1 the C	bytes long BCD pointed by (HL)
-		call	IntToChar	; Integer to char (0-255)
+		call	BCD5ToChar	; Converts BCD5	pointed	by HL into char	in A
 		ld	(I3), a
 		ld	a, (Result)
 		cp	0
@@ -10337,27 +10341,27 @@ writeChar2:
 		jp	nz, writeChar3
 		call	AuxOut		; Writes a character to	the AUX	device
 		ret
-writeChar3:
-		ld	hl, (word_02D4)
+writeChar3:				; 0=Closed 1=Open
+		ld	hl, (pDevIsOpen)
 		ld	a, (hl)
 		and	00001000b
 		jp	nz, writeChar4
-		ld	hl, (word_02E0)
+		ld	hl, (pDevBuffer)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (word_02E2)
+		ld	hl, (pDevRead)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
 		ld	hl, (word_02E4)
 		ld	(hl), 0
-writeChar4:
-		ld	hl, (word_02D4)
+writeChar4:				; 0=Closed 1=Open
+		ld	hl, (pDevIsOpen)
 		ld	a, (hl)
 		or	00000010b
 		ld	(hl), a
-		ld	hl, (word_02E2)
+		ld	hl, (pDevRead)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -10371,17 +10375,17 @@ writeChar4:
 		inc	hl
 		ld	(pIndex), hl
 		ex	de, hl
-		ld	hl, (word_02E2)
+		ld	hl, (pDevRead)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
 		ld	hl, (word_02E4)
 		ex	de, hl
-		ld	hl, (word_02DE)
+		ld	hl, (pDevEOF)
 		ld	a, (de)
 		cp	(hl)
 		jp	nz, writeChar5
-		ld	hl, (pDevice)
+		ld	hl, (pDevDrive)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -10389,8 +10393,8 @@ writeChar4:
 		ld	a, (hl)
 		ld	(Drive), a	; Current disk drive
 		inc	hl
-		ld	(pFCBAddr), hl	; Pointer to FCB address
-		ld	hl, (word_02E0)
+		ld	(pDevFileName),	hl
+		ld	hl, (pDevBuffer)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
@@ -10399,16 +10403,16 @@ writeChar4:
 		call	FSeqWrite	; Sequential write file	(5 retries)
 		ld	hl, (word_02E4)
 		ld	(hl), 0
-		ld	hl, (word_02E0)
+		ld	hl, (pDevBuffer)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (word_02E2)
+		ld	hl, (pDevRead)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-writeChar5:
-		ld	hl, (word_02D4)
+writeChar5:				; 0=Closed 1=Open
+		ld	hl, (pDevIsOpen)
 		ld	a, (hl)
 		or	00001000b
 		ld	(hl), a
@@ -10423,7 +10427,7 @@ sub_5555:
 		ld	a, 0
 		ld	(byte_A610), a
 		ld	hl, ibcdUnk07
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ld	hl, byte_A668	; (todo) Check this
 		call	sub_97A2
 		call	sub_5575
@@ -10595,7 +10599,7 @@ loc_56E1:
 		jp	z, locret_570C
 		call	ExprToInt	; Convert expression to	integer
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		jp	locret_570C
 loc_56F4:
 		ld	a, (byte_A699)
@@ -10606,7 +10610,7 @@ loc_56F4:
 		jp	z, locret_570C
 		call	ExprToInt	; Convert expression to	integer
 		ld	hl, ibcdTemp1
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 locret_570C:
 		ret
 ; End of function sub_569A
@@ -10644,7 +10648,7 @@ loc_573B:
 ; End of function sub_570D
 ; =============== S U B	R O U T	I N E =======================================
 sub_574A:
-		ld	hl, DevTable
+		ld	hl, DevTable	; HL points to the start of the	device table
 		ld	(pTmp1), hl
 		ld	a, (DeviceInUse)
 		ld	(tmpChar2), a
@@ -10653,40 +10657,40 @@ loc_5756:
 		or	a
 		jp	z, loc_576E
 		ld	hl, (pTmp1)
-		ld	de, 14h
-		add	hl, de
+		ld	de, 20
+		add	hl, de		; HL points to the next	device entry
 		ld	(pTmp1), hl
 		ld	hl, tmpChar2
 		dec	(hl)
 		jp	loc_5756
 loc_576E:
 		ld	hl, (pTmp1)
-		ld	(word_02D4), hl
+		ld	(pDevIsOpen), hl ; 0=Closed 1=Open
 		inc	hl
 		ld	(pTmp1), hl
-		ld	(word_02D6), hl
+		ld	(pDevType), hl	; 1=R/O	2=R/W
 		inc	hl
 		ld	(pTmp1), hl
-		ld	(pDevX), hl
+		ld	(pDevX), hl	; X position (BCD5)
 		ld	de, 5
 		add	hl, de
 		ld	(pTmp1), hl
-		ld	(pDevY), hl
+		ld	(pDevY), hl	; Y position (BCD5)
 		ld	de, 5
 		add	hl, de
 		ld	(pTmp1), hl
-		ld	(word_02DE), hl
+		ld	(pDevEOF), hl
 		inc	hl
 		ld	(pTmp1), hl
-		ld	(pDevice), hl
+		ld	(pDevDrive), hl
 		ld	de, 2
 		add	hl, de
 		ld	(pTmp1), hl
-		ld	(word_02E0), hl
+		ld	(pDevBuffer), hl
 		ld	de, 2
 		add	hl, de
 		ld	(pTmp1), hl
-		ld	(word_02E2), hl
+		ld	(pDevRead), hl
 		ld	de, 2
 		add	hl, de
 		ld	(pTmp1), hl
@@ -10700,23 +10704,23 @@ sub_57BC:
 		ld	a, (hl)
 		and	11110000b
 		jp	nz, locret_5860
-		ld	hl, (word_02E0)
+		ld	hl, (pDevBuffer)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		ld	(pFRWBuffer), hl ; Pointer to file R/W buffer
-		ld	hl, (word_02E0)
+		ld	hl, (pDevBuffer)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (word_02E2)
+		ld	hl, (pDevRead)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
 		ld	hl, (word_02E4)
 		ld	(hl), 0
-		ld	hl, (word_02D4)
+		ld	hl, (pDevIsOpen) ; 0=Closed 1=Open
 		ld	a, (hl)
 		and	00000010b
 		jp	z, loc_57EF
@@ -10731,7 +10735,7 @@ loc_57EF:
 		ld	a, (hl)
 		and	11110000b
 		jp	nz, loc_5859
-		call	IntToChar	; Integer to char (0-255)
+		call	BCD5ToChar	; Converts BCD5	pointed	by HL into char	in A
 		ld	(tmpChar2), a
 		ld	a, (Result)
 		cp	0
@@ -10760,16 +10764,16 @@ loc_5842:
 		ld	a, (tmpChar1)
 		cp	1Ah
 		jp	nz, loc_5852
-		ld	hl, (word_02D6)
+		ld	hl, (pDevType)	; 1=R/O	2=R/W
 		ld	(hl), 1
 		jp	loc_5859
-loc_5852:
-		ld	hl, (word_02D4)
+loc_5852:				; 0=Closed 1=Open
+		ld	hl, (pDevIsOpen)
 		ld	a, (hl)
 		or	00000100b
 		ld	(hl), a
-loc_5859:
-		ld	hl, (word_02D4)
+loc_5859:				; 0=Closed 1=Open
+		ld	hl, (pDevIsOpen)
 		ld	a, (hl)
 		or	00011000b
 		ld	(hl), a
@@ -11591,15 +11595,15 @@ sub_5F1D:
 		ld	(pTmp3), hl
 		xor	a
 		ld	(tmpChar2), a
-		ld	hl, (word_02D4)
+		ld	hl, (pDevIsOpen) ; 0=Closed 1=Open
 		ld	a, (hl)
 		and	00001000b
 		jp	nz, loc_5F44
-		ld	hl, (word_02E0)
+		ld	hl, (pDevBuffer)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
-		ld	hl, (word_02E2)
+		ld	hl, (pDevRead)
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
@@ -11665,15 +11669,15 @@ loc_5FAC:
 		ld	a, (tmpChar1)
 		cp	0Ah
 		jp	nz, loc_5FAC
-loc_5FC5:
-		ld	hl, (word_02D4)
+loc_5FC5:				; 0=Closed 1=Open
+		ld	hl, (pDevIsOpen)
 		ld	a, (hl)
 		or	00001000b
 		ld	(hl), a
-		ld	hl, (pDevY)
+		ld	hl, (pDevY)	; Y position (BCD5)
 		ld	c, 5
 		call	IbcdHL		; Increments by	1 the C	bytes long BCD pointed by (HL)
-		ld	hl, (pDevX)
+		ld	hl, (pDevX)	; X position (BCD5)
 		ld	de, ibcdV0
 		call	Copy5DEHL	; Copy 5 bytes from (DE) to (HL) ; SetI
 		ret
@@ -11881,7 +11885,7 @@ MV2LN1:
 		ld	(ix+0),	a
 		inc	ix
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 MV2LN2:
 		ld	a, (DT)
 		cp	1
@@ -16498,13 +16502,13 @@ PrintErr2:
 		or	a
 		jp	z, PrintErr4
 		ld	hl, 2047h	; (todo) Check this
-		ld	(CmdLine), hl
+		ld	(D0Buffer), hl	; Device 0 (console) buffer
 		ld	a, (byte_A04B)
 		ld	c, a
 		add	a, 2
 		ld	(CmdLineSz), a	; Size of the command line
 		ld	b, 0
-		ld	de,  CmdLine+2
+		ld	de,  D0Buffer+2	; Device 0 (console) buffer
 		ld	hl, ArgPl
 		ldir
 		ex	de, hl
@@ -16561,7 +16565,7 @@ PrintErr3:
 		ld	(byte_A6A3), a
 		ld	a, 1
 		ld	(byte_04FF), a
-		ld	hl, CmdLine
+		ld	hl, D0Buffer	; Device 0 (console) buffer
 		ld	(pStkPos), hl
 		ld	(pStkStart), hl
 		call	sub_8B17
@@ -16825,7 +16829,7 @@ sub_8B6A:
 		ld	b, 0Eh
 		ld	hl, (pTmp2)
 		ld	de, lbcdTemp1
-		call	BCDPack
+		call	BCDPack		; Packs	a C long string	pointed	by HL into BCD form
 		ld	(Signal1), a
 		ld	a, (Count)
 		ld	(byte_04EE), a
@@ -16833,7 +16837,7 @@ sub_8B6A:
 		ld	c, a
 		ld	hl, (pTmp3)
 		ld	de, lbcdTemp2
-		call	BCDPack
+		call	BCDPack		; Packs	a C long string	pointed	by HL into BCD form
 		ld	(byte_04F1), a
 		ld	a, (Count)
 		ld	(byte_04EF), a
@@ -17110,7 +17114,7 @@ loc_8D86:
 ;	  COUNT	 NUMBER	OF DECIMAL PLACES
 ;
 ; =============== S U B	R O U T	I N E =======================================
-; Packs	a string into BCD form
+; Packs	a C long string	pointed	by HL into BCD form
 BCDPack:
 		push	hl
 		push	de
@@ -18314,7 +18318,7 @@ sub_935C:
 		pop	hl
 		ld	de, lbcdTemp1
 		ld	b, 0Eh
-		call	BCDPack
+		call	BCDPack		; Packs	a C long string	pointed	by HL into BCD form
 		ld	(Signal1), a
 		ld	a, (Count)
 		ld	(byte_04EE), a
@@ -18533,7 +18537,7 @@ loc_94D3:
 		ld	a, 255
 		cp	c
 		jr	z, loc_94C3
-		ld	a, (byte_0545)
+		ld	a, (BytesToRead)
 		cp	c
 		jr	z, loc_94C3
 		inc	hl
@@ -18772,28 +18776,28 @@ loc_95EE:
 		jr	loc_95D0
 ; End of function sub_95A6
 ; =============== S U B	R O U T	I N E =======================================
-; Integer to char (0-255)
-IntToChar:
+; Converts BCD5	pointed	by HL into char	in A
+BCD5ToChar:
 		push	hl
 		push	de
 		push	bc
 		ld	a, 0
 		ld	(Result), a
 		ld	de, ibcdV255
-		ld	bc, INTLN*257
+		ld	bc,  word_0504+1
 		call	SCmp		; Compares two strings
-		jr	c, IntToCharEnd
+		jr	c, BCD5ToCharEnd
 		ld	bc, 3
 		add	hl, bc
 		ld	a, (hl)
 		dec	a
 		ld	a, 0
-		jp	m, IntToChar2
-		jr	z, IntToChar1
+		jp	m, BCD5ToChar2
+		jr	z, BCD5ToChar1
 		ld	a, 100
-IntToChar1:
+BCD5ToChar1:
 		add	a, 100
-IntToChar2:
+BCD5ToChar2:
 		ld	b, a
 		inc	hl
 		ld	a, (hl)
@@ -18810,12 +18814,12 @@ IntToChar2:
 		add	a, b
 		ld	hl, Result
 		ld	(hl), 1
-IntToCharEnd:
+BCD5ToCharEnd:
 		pop	bc
 		pop	de
 		pop	hl
 		ret
-; End of function IntToChar
+; End of function BCD5ToChar
 ; =============== S U B	R O U T	I N E =======================================
 ; Convert char (0-255) to string and push it
 CharToStr:
@@ -19431,8 +19435,8 @@ StrToChar5:
 		ret
 ; End of function StrToChar
 ; =============== S U B	R O U T	I N E =======================================
-; Converts string on ToS to integer
-StrToInt:
+; Converts string on ToS to BCD	(pointed by HL)
+StrToBCD:
 		push	af
 		push	de
 		push	bc
@@ -19452,19 +19456,19 @@ StrToInt:
 		pop	ix
 		pop	de		; Get integer start
 		ld	b, INTLN
-		call	BCDPack
+		call	BCDPack		; Packs	a C long string	pointed	by HL into BCD form
 		or	a		; Check	sign
-		jr	z, StrToIntEnd
+		jr	z, StrToBCDEnd
 		ld	a, (de)
 		or	11110000b	; Set sign
 		ld	(de), a
-StrToIntEnd:
+StrToBCDEnd:
 		ex	de, hl
 		pop	bc
 		pop	de
 		pop	af
 		ret
-; End of function StrToInt
+; End of function StrToBCD
 ; =============== S U B	R O U T	I N E =======================================
 sub_98DD:
 		push	hl
@@ -19488,7 +19492,7 @@ sub_98DD:
 		pop	af
 		ld	c, a
 		ld	b, 0Eh
-		call	BCDPack
+		call	BCDPack		; Packs	a C long string	pointed	by HL into BCD form
 		dec	de
 		ld	(de), a
 		dec	de
@@ -19596,8 +19600,8 @@ sub_9998:
 loc_99A7:
 		ld	a, (byte_A6A2)
 		ld	d, a
-loc_99AB:
-		ld	hl, CmdLine
+loc_99AB:				; Device 0 (console) buffer
+		ld	hl, D0Buffer
 		ld	c, 0
 loc_99B0:
 		call	sub_9926
@@ -19675,7 +19679,7 @@ loc_9A22:
 		ld	a, 255
 		cp	c
 		jp	z, loc_99B8
-		ld	a, (byte_0545)
+		ld	a, (BytesToRead)
 		cp	c
 		jp	z, loc_99B8
 		inc	hl
@@ -20061,7 +20065,7 @@ FFirst:
 		ld	c, 26		; Set DMA address
 		ld	de, Page0BUF
 		call	BDOScall	; Makes	a call to the CP/M BDOS
-		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	hl, (pDevFileName)
 		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
@@ -20087,13 +20091,13 @@ DiskReset:
 ; =============== S U B	R O U T	I N E =======================================
 ; Compute file size
 FSize:
-		ld	de, (pFCBAddr)	; Pointer to FCB address
+		ld	de, (pDevFileName)
 		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(de), a
 		ld	c, 23h		; Compute file size
 		call	BDOScall	; Makes	a call to the CP/M BDOS
-		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	hl, (pDevFileName)
 		ld	bc, 33
 		add	hl, bc
 		ld	e, (hl)
@@ -20103,7 +20107,7 @@ FSize:
 		ld	(pIndex), hl
 		call	sub_9321
 		ld	hl, ibcdTemp0
-		call	StrToInt	; Converts string on ToS to integer
+		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		ret
 ; End of function FSize
 ; =============== S U B	R O U T	I N E =======================================
@@ -20115,7 +20119,7 @@ FRndRead:
 		cp	0
 		jp	z, Error48	; Invalid parameter
 		ex	de, hl
-		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	hl, (pDevFileName)
 		ld	bc, 33
 		add	hl, bc
 		ld	(hl), e
@@ -20125,7 +20129,7 @@ FRndRead:
 		ex	de, hl
 		ld	c, 1Ah		; Set DMA address
 		call	BDOScall	; Makes	a call to the CP/M BDOS
-		ld	de, (pFCBAddr)	; Pointer to FCB address
+		ld	de, (pDevFileName)
 		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(de), a
@@ -20139,7 +20143,7 @@ FRndRead:
 ; Create file
 FCreate:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	hl, (pDevFileName)
 		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
@@ -20158,13 +20162,13 @@ FSeqWrite:
 		ex	de, hl
 		ld	c, 26		; Set DMA address
 		call	BDOScall	; Makes	a call to the CP/M BDOS
-		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	hl, (pDevFileName)
 		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
 		ld	b, 5
-FSeqWrite2:				; Pointer to FCB address
-		ld	hl, (pFCBAddr)
+FSeqWrite2:
+		ld	hl, (pDevFileName)
 		ex	de, hl
 		ld	c, 21		; Write	next record
 		push	bc
@@ -20187,12 +20191,12 @@ Null3:
 ; Close	globals	file
 GFClose:
 		ld	hl, GlobalsFCB	; FCB for the globals file
-		ld	(pFCBAddr), hl	; Pointer to FCB address
+		ld	(pDevFileName),	hl
 		ld	a, (GlobalsDR)	; Default drive	for globals
 		ld	(Drive), a	; Current disk drive
 FClose:					; Close	file
 		call	SSChk
-		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	hl, (pDevFileName)
 		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
@@ -20207,7 +20211,7 @@ GFOpen:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	PrepFCB		; Prepares the FCB
 FOpen:					; Open file
-		ld	hl, (pFCBAddr)
+		ld	hl, (pDevFileName)
 		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
@@ -20228,19 +20232,19 @@ sub_9D7F:
 		ex	de, hl
 		ld	c, 26		; Set DMA address
 		call	BDOScall	; Makes	a call to the CP/M BDOS
-		ld	hl, (word_02D4)
+		ld	hl, (pDevIsOpen) ; 0=Closed 1=Open
 		ld	a, 00010000b
 		and	(hl)
 		jr	z, loc_9D9F
 		ld	a, (hl)
 		and	11101111b
 		ld	(hl), a
-		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	hl, (pDevFileName)
 		ld	bc, Space
 		add	hl, bc
 		inc	(hl)
-loc_9D9F:				; Pointer to FCB address
-		ld	hl, (pFCBAddr)
+loc_9D9F:
+		ld	hl, (pDevFileName)
 		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
@@ -20276,11 +20280,11 @@ loc_9DD2:
 ; Delete file
 FDelete:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	hl, (pDevFileName)
 		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
-		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	hl, (pDevFileName)
 		ld	a, (Drive)	; Current disk drive
 		inc	a
 		ld	(hl), a
@@ -20296,24 +20300,24 @@ PrepFCB:
 		or	a
 		jp	nz, PrepFCB1
 		ld	hl, GlobalsFCB	; FCB for the globals file
-		ld	(pFCBAddr), hl	; Pointer to FCB address
+		ld	(pDevFileName),	hl
 		ld	hl,  GlobalsFCB+12 ; FCB for the globals file
 		ld	(hl), 0
 		ret
 PrepFCB1:
 		cp	1
 		jp	nz, PrepFCB2
-		ld	hl,  DFCB0+1
+		ld	hl,  RTNFCB+1	; Routine FCB
 		jp	PrepFCB3
 PrepFCB2:
-		ld	hl, (pDevice)
+		ld	hl, (pDevDrive)
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
 		inc	hl
-PrepFCB3:				; Pointer to FCB address
-		ld	(pFCBAddr), hl
+PrepFCB3:
+		ld	(pDevFileName),	hl
 		push	ix
 		pop	hl
 		dec	hl
@@ -20327,7 +20331,7 @@ PrepFCB3:				; Pointer to FCB address
 		add	hl, de
 		push	hl
 		pop	ix
-		ld	hl, (pFCBAddr)	; Pointer to FCB address
+		ld	hl, (pDevFileName)
 		ex	de, hl
 		push	ix
 		pop	hl
@@ -20495,46 +20499,46 @@ ArgPl:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0
 DevTable:	db 1, 2, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0FFh
 		dw 0
-		dw CmdLine
+		dw D0Buffer		; Device 0 (console) buffer
 		dw 0
 		db 0
 		db 0, 1, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 84h
 		dw 0
-		dw PBuff
+		dw D1Buffer		; Device 1 (printer) buffer
 		dw 0
 		db 0
 		db 0, 2, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 80h
-		dw DFCB1
-		dw DBuf1
+		dw D2FCB		; Device 2 FCB
+		dw D2Buffer		; Device 2 buffer
 		dw 0
 		db 0
 		db 0, 2, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 80h
-		dw DFCB2
-		dw DBuf2
+		dw D3FCB		; Device 3 FCB
+		dw D3Buffer		; Device 3 buffer
 		dw 0
 		db 0
 		db 0, 2, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 80h
-		dw DFCB3
-		dw DBuf3
+		dw D4FCB		; Device 4 FCB
+		dw D4Buffer		; Device 4 buffer
 		dw 0
 		db 0
 		db 0, 2, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0FFh
 		dw 0
 		dw UBuffer1
 		dw 0
-DFCB0:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+RTNFCB:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0 ; Routine FCB
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0
 		db 0
-DFCB1:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+D2FCB:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0 ; Device 2 FCB
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0
 		db 0
-DFCB2:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+D3FCB:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0 ; Device 3 FCB
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0
 		db 0
-DFCB3:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+D4FCB:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0 ; Device 4 FCB
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0
 		db 0
@@ -20554,7 +20558,7 @@ dirFCB:		db 0
 		db 'DIR     DIR'
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0
-PBuff:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+D1Buffer:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0 ; Device 1 (printer) buffer
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
@@ -20563,7 +20567,7 @@ PBuff:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0
-DBuf1:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+D2Buffer:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0 ; Device 2 buffer
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
@@ -20571,7 +20575,7 @@ DBuf1:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
-DBuf2:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+D3Buffer:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0 ; Device 3 buffer
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
@@ -20579,7 +20583,7 @@ DBuf2:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
-DBuf3:		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
+D4Buffer:	db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0 ; Device 4 buffer
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
 		db 0, 0, 0, 0, 0, 0, 0,	0, 0, 0, 0, 0, 0, 0, 0,	0
