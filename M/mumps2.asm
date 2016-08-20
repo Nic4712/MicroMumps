@@ -275,7 +275,7 @@ byte_04CE:	db 0
 		db 0
 byte_04D0:	db 0
 NR:		db 0
-bmFlag1:	db 0			; b2:Routine not saved
+bmFlag1:	db 0			; bit2:Routine not saved
 byte_04D3:	db 0
 		db 0,0,0,0,0
 Drive:		db 0			; Current disk drive
@@ -324,7 +324,7 @@ word_050C:	dw 0
 word_050E:	dw 0
 word_0510:	dw 0
 byte_0512:	db 0
-word_0513:	dw 0
+GLBBlock:	dw 0			; Current global file block
 byte_0515:	db 0, 0, 0
 byte_0518:	db 0, 0, 0
 byte_051B:	db 0, 0, 0
@@ -592,7 +592,7 @@ Start:
 		call	SSChk		; Check	for room on the	syntax stack
 		xor	a
 		ld	(DeviceInUse), a
-		call	sub_574A
+		call	DevPrepare	; Prepares current device for use
 		call	BGetChar	; GetChar (BIOS	call)
 		ld	a, (Result)
 		cp	0
@@ -617,7 +617,7 @@ NoGreet:
 		ld	hl, 0
 		ld	(SymCount), hl	; Number of symbols defined
 		xor	a
-		ld	(bmFlag1), a	; b2:Routine not saved
+		ld	(bmFlag1), a	; bit2:Routine not saved
 		ld	(bIsGlbOpen), a
 		ld	(byte_04D3), a
 		ld	(WarmBoot), a
@@ -782,7 +782,7 @@ Input2:
 		jp	z, Input3
 		xor	a
 		ld	(DeviceInUse), a
-		call	sub_574A
+		call	DevPrepare	; Prepares current device for use
 		ld	a, (DeviceInUse)
 		ld	(IODevice), a
 Input3:					; Outputs a CrLf
@@ -2889,7 +2889,7 @@ Expr1:
 		jp	z, Expr3
 		cp	1Eh		; Is it	'?'?
 		jp	nz, Expr2
-		ld	hl, bmFlag1	; b2:Routine not saved
+		ld	hl, bmFlag1	; bit2:Routine not saved
 		ld	a, 11111101b
 		and	(hl)
 		ld	(hl), a
@@ -2909,7 +2909,7 @@ Expr3:					; Loads	to (Token) the token code of char (++pStkPos)
 		cp	1Eh		; Is it	'?'?
 		jp	nz, Error13	; Illegal use of NOT operator
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		ld	hl, bmFlag1	; b2:Routine not saved
+		ld	hl, bmFlag1	; bit2:Routine not saved
 		ld	a, (hl)
 		or	00000010b
 		ld	(hl), a
@@ -4272,7 +4272,7 @@ NumLit:
 		ld	(tmpChar2), a
 		ld	(I2), a		; Size of integer part
 		ld	(I3), a		; Size of decimal fraction
-		ld	a, (bmFlag1)	; b2:Routine not saved
+		ld	a, (bmFlag1)	; bit2:Routine not saved
 		and	STRNG
 		jp	z, NumLit1
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
@@ -4604,7 +4604,7 @@ NumLitEnd:
 		ld	a, (tmpChar2)
 		ld	(Result), a
 		ret
-NumLitErr:				; b2:Routine not saved
+NumLitErr:				; bit2:Routine not saved
 		ld	a, (bmFlag1)
 		and	00000001b
 		jp	z, Error26	; Illegal numeric literal
@@ -4614,7 +4614,7 @@ NumLitErr:				; b2:Routine not saved
 ; Check	for integer literal
 IntLit:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (bmFlag1)	; b2:Routine not saved
+		ld	a, (bmFlag1)	; bit2:Routine not saved
 		and	STRNG
 		jp	nz, IntLit1
 		ld	a, 255		; Set digit count
@@ -4843,7 +4843,7 @@ sub_2723:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(IOTemp1), a
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pTmp4), hl
 		ld	(pIndex), ix
 		ld	de, (pTmp4)
@@ -5228,13 +5228,13 @@ bczSaveN:
 		ld	a, (Result)
 		cp	1
 		jp	nz, bczSaveN1
-		ld	a, (bmFlag1)	; b2:Routine not saved
+		ld	a, (bmFlag1)	; bit2:Routine not saved
 		and	00000100b
 		jp	z, Error41	; Routine already in library
 		call	FDelete		; Delete file
 bczSaveN1:				; Save routine
 		call	SaveRtn
-		ld	hl, bmFlag1	; b2:Routine not saved
+		ld	hl, bmFlag1	; bit2:Routine not saved
 		ld	a, 11111011b	; Marks	bit 2 as routine saved
 		and	(hl)
 		ld	(hl), a
@@ -5391,13 +5391,13 @@ bczSave:
 		ld	a, (Result)
 		cp	1
 		jp	nz, bczSave1
-		ld	a, (bmFlag1)	; b2:Routine not saved
+		ld	a, (bmFlag1)	; bit2:Routine not saved
 		and	00000100b
 		jp	z, bczSaveE
 		call	FDelete		; Delete file
 bczSave1:				; Save routine
 		call	SaveRtn
-		ld	hl, bmFlag1	; b2:Routine not saved
+		ld	hl, bmFlag1	; bit2:Routine not saved
 		ld	a, 11111011b	; Marks	bit 2 as routine saved
 		and	(hl)
 		ld	(hl), a
@@ -5802,7 +5802,7 @@ bcView2:
 		ld	a, (I1)
 		cp	2
 		jp	nz, bcView3
-		call	ShowGlb		; View a list os globals
+		call	ShowGlb		; View a list of globals
 		jp	cbViewE
 bcView3:
 		ld	a, (I1)
@@ -6120,7 +6120,7 @@ bfLength3:
 ; =============== S U B	R O U T	I N E =======================================
 sub_31CA:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, bmFlag1	; b2:Routine not saved
+		ld	hl, bmFlag1	; bit2:Routine not saved
 		ld	a, 11111101b
 		and	(hl)
 		ld	(hl), a
@@ -6131,7 +6131,7 @@ sub_31CA:
 		ld	(pTmp3), hl
 		cp	32h		; '2'
 		jp	c, loc_31F5
-		ld	hl, bmFlag1	; b2:Routine not saved
+		ld	hl, bmFlag1	; bit2:Routine not saved
 		ld	a, (hl)
 		or	00000010b
 		ld	(hl), a
@@ -6175,7 +6175,7 @@ loc_3207:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_8B6A
 		ret
-loc_3241:				; b2:Routine not saved
+loc_3241:				; bit2:Routine not saved
 		ld	a, (bmFlag1)
 		and	00000010b
 		jp	nz, loc_3259
@@ -6183,7 +6183,7 @@ loc_3249:				; '1'
 		ld	a, 31h
 		ld	(tmpChar1), a
 		jp	loc_325E
-loc_3251:				; b2:Routine not saved
+loc_3251:				; bit2:Routine not saved
 		ld	a, (bmFlag1)
 		and	00000010b
 		jp	nz, loc_3249
@@ -6724,7 +6724,7 @@ bcBreak2:
 		call	putStr		; Outputs 0x00 terminated string pointed by HL
 		xor	a
 		ld	(DeviceInUse), a
-		call	sub_574A
+		call	DevPrepare	; Prepares current device for use
 		ld	a, (Case)
 		cp	1
 		jp	nz, bcBreak3
@@ -6775,7 +6775,7 @@ bczGo:
 		ld	a, (ix+0)
 		ld	(IndFL), a	; Indirection flag
 		call	sub_5555
-		call	sub_574A
+		call	DevPrepare	; Prepares current device for use
 		ld	a, (DeviceInUse)
 		ld	(IODevice), a
 		ld	hl, (pStkPos)
@@ -7010,7 +7010,7 @@ Write2:
 ; =============== S U B	R O U T	I N E =======================================
 sub_3977:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (bmFlag1)	; b2:Routine not saved
+		ld	a, (bmFlag1)	; bit2:Routine not saved
 		and	00000100b
 		jp	nz, Error42	; Remove or save routine
 loc_3982:
@@ -7105,7 +7105,7 @@ KillAll:
 ; =============== S U B	R O U T	I N E =======================================
 sub_3A04:
 		call	SSChk		; Check	for room on the	syntax stack
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pIndex), hl
 		ld	(word_02F2), ix
 		ld	de, (pIndex)
@@ -7315,7 +7315,7 @@ sub_3BAC:
 		jp	nz, loc_3BC6
 		ld	a, (IODevice)
 		ld	(DeviceInUse), a
-		call	sub_574A
+		call	DevPrepare	; Prepares current device for use
 		jp	Error49		; Device not open
 loc_3BC6:
 		ld	a, (byte_A699)
@@ -7859,7 +7859,7 @@ bcClose1:
 		ld	a, (ix+0)
 		ld	(DeviceInUse), a
 		ld	(tmpChar2), a
-		call	sub_574A
+		call	DevPrepare	; Prepares current device for use
 		ld	a, (DeviceInUse)
 		cp	2
 		jp	c, bcClose5
@@ -7923,7 +7923,7 @@ bcClose5:				; 0=Closed 1=Open
 bcCloseEnd:
 		ld	a, (IODevice)
 		ld	(DeviceInUse), a
-		call	sub_574A
+		call	DevPrepare	; Prepares current device for use
 		ret
 ; End of function bcClose
 ; =============== S U B	R O U T	I N E =======================================
@@ -8069,7 +8069,7 @@ loc_41DE:				; 0=Closed 1=Open
 		ld	(hl), a
 		ld	a, (IODevice)
 		ld	(DeviceInUse), a
-		call	sub_574A
+		call	DevPrepare	; Prepares current device for use
 		ld	ix, (pTmp6)
 		call	SSChk		; Check	for room on the	syntax stack
 		ret
@@ -8258,7 +8258,7 @@ loc_437A:				; Loads	to (Token) the token code of char (++pStkPos)
 ; =============== S U B	R O U T	I N E =======================================
 sub_4380:
 		call	SSChk		; Check	for room on the	syntax stack
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pStkPos), hl
 		ld	a, (Mode)
 		cp	0
@@ -8456,9 +8456,9 @@ loc_4539:
 		jp	z, loc_4606
 		ld	hl, Count
 		dec	(hl)
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pStkPos), hl
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pTmp1), hl
 		ld	(pTmp2), hl
 		inc	hl
@@ -8540,10 +8540,10 @@ loc_4606:
 loc_460B:
 		ld	ix, (pTmp4)
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (bmFlag1)	; b2:Routine not saved
+		ld	a, (bmFlag1)	; bit2:Routine not saved
 		and	00000010b
 		jp	z, loc_4629
-		ld	hl, bmFlag1	; b2:Routine not saved
+		ld	hl, bmFlag1	; bit2:Routine not saved
 		ld	a, 11111101b
 		and	(hl)
 		ld	(hl), a
@@ -8730,7 +8730,7 @@ loc_47D6:
 ; =============== S U B	R O U T	I N E =======================================
 sub_47DD:
 		call	SSChk		; Check	for room on the	syntax stack
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pStkPos), hl
 		ld	a, (Mode)
 		cp	0
@@ -8779,7 +8779,7 @@ sub_4839:
 		ld	bc, 0FFFEh	; 65534
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pTmp1), hl
 		ld	(TPP), ix
 		ld	de, (pTmp1)
@@ -8838,7 +8838,7 @@ sub_48A2:
 		ld	(word_9F9A), hl
 		ld	hl, (pEndOfRtn)	; Pointer to the end of	the loaded routine
 		ld	(hl), 1Ah	; End of file
-		ld	hl, bmFlag1	; b2:Routine not saved
+		ld	hl, bmFlag1	; bit2:Routine not saved
 		ld	a, 11111011b
 		and	(hl)
 		ld	(hl), a
@@ -8861,7 +8861,7 @@ bczLoad:
 		call	sub_5FDE
 		ld	hl, (pEndOfRtn)	; Pointer to the end of	the loaded routine
 		ld	(pCurRtnLine), hl ; Pointer to current routine line
-		ld	hl, bmFlag1	; b2:Routine not saved
+		ld	hl, bmFlag1	; bit2:Routine not saved
 		ld	a, 11111011b
 		and	(hl)
 		ld	(hl), a
@@ -9843,7 +9843,7 @@ loc_50BD:
 ; =============== S U B	R O U T	I N E =======================================
 sub_50CC:
 		call	SSChk		; Check	for room on the	syntax stack
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(word_02C0), hl
 		ld	(word_02F2), ix
 		ld	de, (word_02C0)
@@ -10436,9 +10436,9 @@ sub_5555:
 ; =============== S U B	R O U T	I N E =======================================
 sub_5575:
 		call	SSChk		; Check	for room on the	syntax stack
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pStkPos), hl
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pStkStart), hl
 		ld	a, (Mode)
 		cp	0
@@ -10643,27 +10643,28 @@ loc_573B:
 		ld	(pTmp6), hl
 		ld	a, (hl)
 		ld	(DeviceInUse), a
-		call	sub_574A
+		call	DevPrepare	; Prepares current device for use
 		ret
 ; End of function sub_570D
 ; =============== S U B	R O U T	I N E =======================================
-sub_574A:
+; Prepares current device for use
+DevPrepare:
 		ld	hl, DevTable	; HL points to the start of the	device table
 		ld	(pTmp1), hl
 		ld	a, (DeviceInUse)
 		ld	(tmpChar2), a
-loc_5756:
+DevPrepare1:
 		ld	a, (tmpChar2)
 		or	a
-		jp	z, loc_576E
+		jp	z, DevPrepare2
 		ld	hl, (pTmp1)
 		ld	de, 20
 		add	hl, de		; HL points to the next	device entry
 		ld	(pTmp1), hl
 		ld	hl, tmpChar2
 		dec	(hl)
-		jp	loc_5756
-loc_576E:
+		jp	DevPrepare1
+DevPrepare2:
 		ld	hl, (pTmp1)
 		ld	(pDevIsOpen), hl ; 0=Closed 1=Open
 		inc	hl
@@ -10696,7 +10697,7 @@ loc_576E:
 		ld	(pTmp1), hl
 		ld	(word_02E4), hl
 		ret
-; End of function sub_574A
+; End of function DevPrepare
 ; =============== S U B	R O U T	I N E =======================================
 sub_57BC:
 		call	SSChk		; Check	for room on the	syntax stack
@@ -10927,7 +10928,7 @@ loc_5992:				; Length of the	current	string (plus 1)
 		ld	hl, StrLen
 		dec	(hl)
 		jp	loc_5969
-loc_5999:				; b2:Routine not saved
+loc_5999:				; bit2:Routine not saved
 		ld	hl, bmFlag1
 		ld	a, (hl)
 		or	00000001b
@@ -10942,7 +10943,7 @@ loc_59B1:				; Length of the	current	string (plus 1)
 		ld	a, (StrLen)
 		ld	(I1), a
 		call	IntLit		; Check	for integer literal
-loc_59BA:				; b2:Routine not saved
+loc_59BA:				; bit2:Routine not saved
 		ld	hl, bmFlag1
 		ld	a, 11111110b
 		and	(hl)
@@ -11027,7 +11028,7 @@ locret_5A66:
 ; =============== S U B	R O U T	I N E =======================================
 sub_5A67:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	bc, 0FFFBh
 		add	hl, bc
 		ld	(pIndex), hl
@@ -11062,11 +11063,11 @@ sub_5AA4:
 		or	a
 		sbc	hl, de
 		jp	z, loc_5B2F
-		ld	a, (bmFlag1)	; b2:Routine not saved
+		ld	a, (bmFlag1)	; bit2:Routine not saved
 		and	00000100b
 		jp	nz, Error42	; Remove or save routine
 		ld	hl, (pTmp1)
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		call	sub_5A67
 		ld	a, (byte_A6A1)
 		cp	1
@@ -11078,7 +11079,7 @@ loc_5AD0:
 		ld	a, 0Bh
 		call	CopyAup		; Copy A bytes from (HL)->(DE) up
 		ld	hl, (pTmp1)
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ld	de, 9
 		add	hl, de
 		ld	(pTmp1), hl
@@ -11220,11 +11221,11 @@ sub_5BFC:
 		ld	(word_A622), hl
 loc_5C09:
 		ld	hl, (word_A62A)
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		xor	a
 		ld	(byte_A692), a
-loc_5C13:
-		ld	hl, (word_A62E)
+loc_5C13:				; Pointer to global buffer to write
+		ld	hl, (pGlbBufferW)
 		ex	de, hl
 		ld	hl, (word_A62A)
 		or	a
@@ -11242,8 +11243,8 @@ loc_5C2F:
 		cp	1
 		jp	z, loc_5C09
 		jp	locret_5D1E
-loc_5C3D:
-		ld	hl, (word_A62E)
+loc_5C3D:				; Pointer to global buffer to write
+		ld	hl, (pGlbBufferW)
 		inc	hl
 		ld	(word_A638), hl
 		ld	e, (hl)
@@ -11256,16 +11257,16 @@ loc_5C3D:
 		sbc	hl, de
 		jp	c, loc_5C58
 		jp	loc_5C6C
-loc_5C58:
-		ld	hl, (word_A62E)
+loc_5C58:				; Pointer to global buffer to write
+		ld	hl, (pGlbBufferW)
 		ld	de, 3
 		add	hl, de
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		jp	loc_5C13
 loc_5C6C:
 		ld	hl, (word_A638)
@@ -11285,27 +11286,27 @@ loc_5C6C:
 		ld	de, 0FFCEh
 		add	hl, de
 		jp	nc, loc_5CD1
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		inc	hl
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ld	hl, (word_A630)
 		ex	de, hl
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		add	hl, de
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ld	hl, (word_A622)
 		ex	de, hl
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		dec	hl
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		dec	hl
 		ld	(hl), Minus
 		ld	bc, 0FFFEh	; 65534
@@ -11318,12 +11319,12 @@ loc_5C6C:
 		inc	hl
 		ld	(hl), d
 		jp	loc_5CDA
-loc_5CD1:
-		ld	hl, (word_A62E)
+loc_5CD1:				; Pointer to global buffer to write
+		ld	hl, (pGlbBufferW)
 		ld	bc, 3
 		call	sub_9A68
-loc_5CDA:
-		ld	hl, (word_A62E)
+loc_5CDA:				; Pointer to global buffer to write
+		ld	hl, (pGlbBufferW)
 		ld	(hl), Plus
 		inc	hl
 		ld	(word_A638), hl
@@ -11336,22 +11337,22 @@ loc_5CDA:
 		add	hl, bc
 		ld	(word_A638), hl
 		ld	(hl), Plus
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	de, 3
 		add	hl, de
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ld	hl, (word_A632)
 		ex	de, hl
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	bc, 0
 		call	sub_968F
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	de, 4
 		add	hl, de
 		ld	a, (byte_A693)
 		ld	(hl), a
 		inc	hl
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ld	a, 1
 		ld	(Result), a
 locret_5D1E:
@@ -11417,7 +11418,7 @@ sub_5D7A:
 		ld	(hl), 1Ah
 		ld	(word_9F9A), hl
 		call	sub_650E
-		ld	hl, bmFlag1	; b2:Routine not saved
+		ld	hl, bmFlag1	; bit2:Routine not saved
 		ld	a, (hl)
 		or	00000100b
 		ld	(hl), a
@@ -11532,7 +11533,7 @@ loc_5E5F:				; Pointer to the end of	the loaded routine
 		ld	hl, (pEndOfRtn)	; Pointer to the end of	the loaded routine
 		ld	(word_9F9A), hl
 		call	sub_650E
-		ld	hl, bmFlag1	; b2:Routine not saved
+		ld	hl, bmFlag1	; bit2:Routine not saved
 		ld	a, (hl)
 		or	00000100b
 		ld	(hl), a
@@ -11712,7 +11713,7 @@ sub_5FDE:
 		sbc	hl, de
 		jp	z, loc_602C
 		ld	hl, (pTmp1)
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		call	sub_6530
 loc_602C:
 		ld	hl, (pTmp1)
@@ -11815,13 +11816,13 @@ sub_6101:
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ex	de, hl
 		ld	hl, (word_A632)
 		or	a
 		sbc	hl, de
 		jp	z, locret_618A
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ex	de, hl
 		ld	hl, (word_A636)
 		or	a
@@ -11829,22 +11830,22 @@ sub_6101:
 		jp	z, locret_618A
 		ld	a, 1
 		ld	(Result), a
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	bc, 0
 		call	sub_9A68
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	de, 4
 		add	hl, de
-		ld	(word_A62E), hl
-		ld	hl, (word_A62E)
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	a, (hl)
 		cp	52h		; 'R'
 		jp	z, loc_617A
 		inc	hl
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ld	bc, 4
 		call	sub_9A68
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	de, 3
 		add	hl, de
 		ld	(word_A638), hl
@@ -11852,14 +11853,14 @@ sub_6101:
 		or	a
 		jp	z, loc_6187
 		ld	de, byte_0512
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		call	sub_980F
-		call	sub_9AE7
+		call	PrepGFCBWrite	; Prepares global FCB for writing
 		jp	loc_6187
-loc_617A:
-		ld	hl, (word_A62E)
+loc_617A:				; Pointer to global buffer to write
+		ld	hl, (pGlbBufferW)
 		inc	hl
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ld	bc, 0Bh
 		call	sub_9A68
 loc_6187:
@@ -12001,7 +12002,7 @@ locret_629C:
 ; =============== S U B	R O U T	I N E =======================================
 sub_629D:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		dec	hl
 		ld	(word_A638), hl
 		ld	hl, (word_A638)
@@ -12015,17 +12016,17 @@ sub_629D:
 		or	a
 		jp	z, loc_62C8
 		ld	de, byte_0512
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		call	sub_980F
-		call	sub_9AE7
-loc_62C8:
-		ld	hl, (word_A62E)
+		call	PrepGFCBWrite	; Prepares global FCB for writing
+loc_62C8:				; Pointer to global buffer to write
+		ld	hl, (pGlbBufferW)
 		ld	bc, 4
 		call	sub_9A68
 		call	sub_62F9
 		jp	locret_62F8
-loc_62D7:
-		ld	hl, (word_A62E)
+loc_62D7:				; Pointer to global buffer to write
+		ld	hl, (pGlbBufferW)
 		ld	bc, 0Bh
 		call	sub_9A68
 		call	sub_62F9
@@ -12042,10 +12043,10 @@ locret_62F8:
 ; =============== S U B	R O U T	I N E =======================================
 sub_62F9:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	bc, 0FFF8h	; 65528
 		add	hl, bc
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		inc	hl
 		ld	(word_A638), hl
 		ld	e, (hl)
@@ -12068,7 +12069,7 @@ sub_62F9:
 		ld	d, (hl)
 		ex	de, hl
 		ld	(word_A63A), hl
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	de, (word_A63A)
 		or	a
 		sbc	hl, de
@@ -12076,7 +12077,7 @@ sub_62F9:
 		ld	bc, 3
 		call	sub_9A68
 		ld	hl, (word_A63C)
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		inc	hl
 		ld	(word_A63C), hl
 		ld	de, (word_A63A)
@@ -12088,8 +12089,8 @@ sub_62F9:
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-loc_635E:
-		ld	hl, (word_A62E)
+loc_635E:				; Pointer to global buffer to write
+		ld	hl, (pGlbBufferW)
 		ld	de, (word_A630)
 		add	hl, de
 		ld	(word_A63C), hl
@@ -12101,7 +12102,7 @@ loc_635E:
 		or	a
 		sbc	hl, de
 		jp	nz, loc_637F
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	(word_A62A), hl
 loc_637F:
 		ld	hl, (word_A63C)
@@ -12119,7 +12120,7 @@ loc_637F:
 		ld	hl, (word_A630)
 		add	hl, de
 		ld	(word_A630), hl
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		inc	hl
 		ld	(word_A638), hl
 		ld	hl, (word_A630)
@@ -12138,7 +12139,7 @@ loc_63BE:
 		dec	hl
 		ld	(word_A63C), hl
 		ld	(hl), Minus
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	(hl), Minus
 		ld	hl, (word_A63C)
 		ld	bc, 0FFFEh	; 65534
@@ -12152,7 +12153,7 @@ loc_63BE:
 		ld	(hl), d
 		ld	hl, (word_A628)
 		ex	de, hl
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	bc, 3
 		call	sub_968F
 		ret
@@ -12160,7 +12161,7 @@ loc_63BE:
 ; =============== S U B	R O U T	I N E =======================================
 sub_63EE:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (bmFlag1)	; b2:Routine not saved
+		ld	a, (bmFlag1)	; bit2:Routine not saved
 		and	00000100b
 		jp	nz, Error42	; Remove or save routine
 		ld	hl, (pTmp1)
@@ -12188,10 +12189,10 @@ sub_63EE:
 		jp	z, loc_645F
 		ld	hl, (word_A626)
 		ex	de, hl
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	bc, 0Bh
 		call	sub_968F
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	(pTmp1), hl
 		ld	hl, (word_9F96)
 		ld	(pTmp2), hl
@@ -12307,28 +12308,28 @@ sub_650E:
 ; =============== S U B	R O U T	I N E =======================================
 sub_6530:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		dec	hl
 		ld	(pIndex), hl
 		ld	a, (hl)
 		cp	52h		; 'R'
 		jp	z, loc_6559
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	bc, 4
 		call	sub_9A68
 		ld	hl, (word_A634)
 		ex	de, hl
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	bc, 4
 		call	sub_968F
 		jp	loc_656F
-loc_6559:
-		ld	hl, (word_A62E)
+loc_6559:				; Pointer to global buffer to write
+		ld	hl, (pGlbBufferW)
 		ld	bc, 0Bh
 		call	sub_9A68
 		ld	hl, (word_A626)
 		ex	de, hl
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	bc, 0Bh
 		call	sub_968F
 loc_656F:
@@ -12443,7 +12444,7 @@ sub_6612:
 ; =============== S U B	R O U T	I N E =======================================
 sub_664B:
 		call	SSChk		; Check	for room on the	syntax stack
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pStkPos), hl
 		ld	a, (Mode)
 		cp	0
@@ -12582,9 +12583,9 @@ IndRet4:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(IndFL), a	; Indirection flag
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pStkPos), hl
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pStkStart), hl
 		ld	a, (Mode)
 		cp	0
@@ -13504,7 +13505,7 @@ loc_6F6A:
 		dec	ix
 		ld	a, (ix+0)
 		ld	(byte_A695), a
-		call	sub_9789
+		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(word_A640), hl
 		ld	hl, byte_0512
 		call	sub_9766
@@ -13690,14 +13691,14 @@ loc_7130:
 		ld	de, byte_0512
 		ld	hl, byte_A617
 		call	sub_980F
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	(pGLBBuffer3), hl
 		ld	de, byte_0512
 		call	sub_980E
-		ld	hl, (word_A62E)
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	de, 3
 		add	hl, de
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ld	(hl), 0
 		ld	hl, (word_A634)
 		ex	de, hl
@@ -13738,7 +13739,7 @@ loc_719A:
 		ld	a, 1
 		ld	(Result), a
 		ld	hl, (pGLBBuffer3)
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		call	sub_6530
 		call	sub_7EDF
 locret_71AB:
@@ -13982,12 +13983,12 @@ loc_7397:
 		ld	hl, (word_A634)
 		ld	de, 4
 		add	hl, de
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ld	e, (hl)
 		inc	hl
 		ld	d, (hl)
 		ex	de, hl
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ex	de, hl
 		ld	hl, (word_A634)
 		or	a
@@ -14645,7 +14646,7 @@ sub_7995:
 		cp	1
 		jp	z, locret_79A9
 		call	sub_7108
-		call	sub_9AD9
+		call	PrepGFCBRead	; Prepares global FCB for reading
 locret_79A9:
 		ret
 ; End of function sub_7995
@@ -14657,7 +14658,7 @@ sub_79AA:
 		cp	1
 		jp	z, loc_79BE
 		call	sub_7108
-		call	sub_9AD9
+		call	PrepGFCBRead	; Prepares global FCB for reading
 loc_79BE:
 		ld	hl, (pGLBBuffer3)
 		ld	(pTmp1), hl
@@ -14804,7 +14805,7 @@ locret_7AFD:
 		ret
 ; End of function sub_7A61
 ; =============== S U B	R O U T	I N E =======================================
-; View a list os globals
+; View a list of globals
 ShowGlb:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_7974
@@ -16715,7 +16716,7 @@ PrintErr19:				; Outputs a CrLf
 		call	putCrLf
 		xor	a
 		ld	(DeviceInUse), a
-		call	sub_574A
+		call	DevPrepare	; Prepares current device for use
 		call	sub_8B17
 		ld	a, (byte_A69D)
 		or	a
@@ -16733,10 +16734,10 @@ PrintErr19:				; Outputs a CrLf
 PrintErr20:				; Symbol stack
 		ld	ix, (pSymStack)
 		ld	sp, (pPlus1000)
-PrintErr21:				; b2:Routine not saved
+PrintErr21:				; bit2:Routine not saved
 		ld	a, (bmFlag1)
 		and	00001100b
-		ld	(bmFlag1), a	; b2:Routine not saved
+		ld	(bmFlag1), a	; bit2:Routine not saved
 		jp	Main		; Prepare initial execution
 ; End of function PrintErr
 ; =============== S U B	R O U T	I N E =======================================
@@ -17075,14 +17076,14 @@ loc_8D5E:
 		ld	a, (Signal1)
 		or	a
 		jr	z, loc_8D6F
-loc_8D64:				; b2:Routine not saved
+loc_8D64:				; bit2:Routine not saved
 		ld	a, (bmFlag1)
 		and	00000010b
 		jr	nz, loc_8D76
 loc_8D6B:				; '0'
 		ld	a, 30h
 		jr	loc_8D78
-loc_8D6F:				; b2:Routine not saved
+loc_8D6F:				; bit2:Routine not saved
 		ld	a, (bmFlag1)
 		and	00000010b
 		jr	nz, loc_8D6B
@@ -19172,13 +19173,14 @@ sub_9782:
 		jr	sub_9775
 ; End of function sub_9782
 ; =============== S U B	R O U T	I N E =======================================
-sub_9789:
+; Loads	the value pointed by IX	into HL
+IXtoHL:
 		dec	ix
 		ld	h, (ix+0)
 		dec	ix
 		ld	l, (ix+0)
 		ret
-; End of function sub_9789
+; End of function IXtoHL
 ; =============== S U B	R O U T	I N E =======================================
 ; No references	to here
 sub_9794:
@@ -19746,18 +19748,19 @@ sub_9A68:
 		ret
 ; End of function sub_9A68
 ; =============== S U B	R O U T	I N E =======================================
-sub_9A7F:
-		ld	hl, (word_0513)
-		add	hl, hl
+; Converts global block	number to CP/M file record
+BLKtoCPM:
+		ld	hl, (GLBBlock)	; Loads	HL
+		add	hl, hl		; Multiplies by	6
 		push	hl
 		add	hl, hl
 		pop	de
 		add	hl, de
-		ld	(GlobalsFCB+33), hl ; FCB for the globals file
-		ld	hl,  GlobalsFCB+35 ; FCB for the globals file
+		ld	(GlobalsFCB+33), hl ; Random access record (R0-R1)
+		ld	hl,  GlobalsFCB+35 ; Random access record overflow (R2)
 		ld	(hl), 0
 		ret
-; End of function sub_9A7F
+; End of function BLKtoCPM
 ; =============== S U B	R O U T	I N E =======================================
 ; Read a global	buffer (768 Bytes) in (DE)
 GlobalRead:
@@ -19813,33 +19816,35 @@ GlobalRW3:
 		ret
 ; End of function GlobalWrite
 ; =============== S U B	R O U T	I N E =======================================
-sub_9AD9:
+; Prepares global FCB for reading
+PrepGFCBRead:
 		call	SSChk		; Check	for room on the	syntax stack
-		call	sub_9A7F
+		call	BLKtoCPM	; Converts global block	number to CP/M file record
 		ld	hl, (pGLBBuffer3)
 		ex	de, hl
 		call	GlobalRead	; Read a global	buffer (768 Bytes) in (DE)
 		ret
-; End of function sub_9AD9
+; End of function PrepGFCBRead
 ; =============== S U B	R O U T	I N E =======================================
-sub_9AE7:
+; Prepares global FCB for writing
+PrepGFCBWrite:
 		call	SSChk		; Check	for room on the	syntax stack
-		call	sub_9A7F
-		ld	hl, (word_A62E)
+		call	BLKtoCPM	; Converts global block	number to CP/M file record
+		ld	hl, (pGlbBufferW) ; Pointer to global buffer to	write
 		ld	de, 8
 		add	hl, de
 		ex	de, hl
 		call	GlobalWrite	; Write	a global buffer	(768 Bytes) in (DE)
 		ret
-; End of function sub_9AE7
+; End of function PrepGFCBWrite
 ; =============== S U B	R O U T	I N E =======================================
 sub_9AF9:
 		ld	hl, 0
 		ld	a, 1
 		ld	(byte_04F8), a
 		ld	de, 0
-loc_9B04:
-		ld	(word_0513), hl
+loc_9B04:				; Current global file block
+		ld	(GLBBlock), hl
 		xor	a
 		ld	(byte_0512), a
 		push	hl
@@ -19901,7 +19906,7 @@ loc_9B60:
 		add	hl, hl
 		add	hl, hl
 		add	hl, bc
-		ld	(word_0513), hl
+		ld	(GLBBlock), hl	; Current global file block
 		xor	a
 		ld	(byte_0512), a
 		scf
@@ -19920,7 +19925,7 @@ loc_9B6E:
 ; End of function sub_9AF9
 ; =============== S U B	R O U T	I N E =======================================
 sub_9B7C:
-		ld	hl, (word_0513)
+		ld	hl, (GLBBlock)	; Current global file block
 		push	hl
 		ld	bc, 38h		; '8'
 		add	hl, bc
@@ -19947,7 +19952,7 @@ loc_9B9D:
 		push	de
 		ld	l, d
 		ld	h, 0
-		ld	(word_0513), hl
+		ld	(GLBBlock), hl	; Current global file block
 		call	sub_7995
 		pop	de
 		pop	hl
@@ -19967,10 +19972,10 @@ loc_9BAE:
 		ld	(hl), 1
 		pop	hl
 		push	hl
-		ld	(word_0513), hl
+		ld	(GLBBlock), hl	; Current global file block
 		call	sub_7995
 		ld	hl, (pGLBBuffer1)
-		ld	(word_A62E), hl
+		ld	(pGlbBufferW), hl ; Pointer to global buffer to	write
 		ld	hl, (pGLbBuffer2)
 		ld	(hl), 0
 		call	sub_5A67
@@ -19979,7 +19984,7 @@ loc_9BAE:
 		inc	hl
 		ld	(word_A648), hl
 		ld	hl, 0
-		ld	(word_0513), hl
+		ld	(GLBBlock), hl	; Current global file block
 		call	sub_7995
 		ld	hl, (word_A648)
 		ex	de, hl
@@ -19992,7 +19997,7 @@ loc_9BAE:
 		ld	hl, (pGLbBuffer2)
 		ld	(hl), 1
 		pop	hl
-		ld	(word_0513), hl
+		ld	(GLBBlock), hl	; Current global file block
 		ret
 ; End of function sub_9B7C
 ; =============== S U B	R O U T	I N E =======================================
@@ -20651,7 +20656,7 @@ word_A626:	dw 0
 word_A628:	dw 0
 word_A62A:	dw 0
 word_A62C:	dw 0
-word_A62E:	dw 0
+pGlbBufferW:	dw 0			; Pointer to global buffer to write
 word_A630:	dw 0
 word_A632:	dw 0
 word_A634:	dw 0
