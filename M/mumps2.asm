@@ -125,7 +125,7 @@ word_02B8:	dw 0
 		db 0,0,0,0,0,0
 word_02C0:	dw 0
 		db 0,0,0,0,0,0
-word_02C8:	dw 0
+NSTOS:		dw 0
 		dw 0
 word_02CC:	dw 0
 		dw 0
@@ -621,7 +621,7 @@ NoGreet:
 		ld	(bIsGlbOpen), a
 		ld	(byte_04D3), a
 		ld	(WarmBoot), a
-		ld	(byte_A69D), a
+		ld	(BreakFL), a	; 1=On Break
 ; End of function Start
 ; =============== S U B	R O U T	I N E =======================================
 ; Prepare initial execution
@@ -775,7 +775,7 @@ Input1:
 		jp	z, Input6
 		ld	a, (AutoexecFlag) ; Runs a pre-defined command line when loading
 		cp	3
-		jp	z, loc_3982
+		jp	z, bcHalt2
 Input2:
 		ld	a, (IODevice)
 		or	a
@@ -812,7 +812,7 @@ Input5:					; Device 0 (console) buffer
 		ld	a, (Result)
 		cp	0
 		jp	z, Input13
-		call	sub_5DB5
+		call	LineInsert	; Insert line ar PrgPT
 		jp	Input2
 Input6:
 		ld	a, (byte_A691)
@@ -1083,7 +1083,7 @@ ecFor1:					; Expression
 		jp	z, ecFor2
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_38CF
+		call	z, AC51		; Set value in for
 		ld	a, (bmActFL)
 		or	a
 		call	z, sub_430C
@@ -1205,7 +1205,7 @@ ecHalt:
 ecHalt1:
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3977
+		call	z, bcHalt
 		ld	hl, bmFlag
 		ld	a, (hl)
 		or	00000001b
@@ -1303,12 +1303,12 @@ ecKill2:				; Loads	to (Token) the token code of char (++pStkPos)
 		jp	z, ecKill3
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3FBA
+		call	z, AC76		; Unmark symbol	table after exclusive kill
 		jp	Error23		; Illegal variable name
 ecKill3:
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3A04
+		call	z, AC62		; Mark for exclusive kill
 		ld	a, (Token)
 		cp	15h		; Is it	','?
 		jp	z, ecKill2
@@ -1316,19 +1316,19 @@ ecKill3:
 		jp	z, ecKill4
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3FBA
+		call	z, AC76		; Unmark symbol	table after exclusive kill
 		jp	Error12		; Unmatched parentheses
 ecKill4:				; Loads	to (Token) the token code of char (++pStkPos)
 		call	GToken
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3A88
+		call	z, AC63		; Kill exclusive of marked variables
 		jp	ecKill6
 ecKill5:				; Global/Local variable	name
 		call	GLVarName
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3AEA
+		call	z, AC64		; Kill variable	+ descendents
 ecKill6:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
@@ -1354,14 +1354,14 @@ ecLock:
 		jp	z, ecLock1
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_49F2
+		call	z, AC102	; Do nothing
 		jp	ecLock3
-ecLock1:
-		call	sub_126B
+ecLock1:				; Variable/List	primitive
+		call	VarList
 		call	DoTimeout	; Does a timeout after a command
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_49E3
+		call	z, AC101	; Dummy	routine	to fix STABK for Lock
 ecLock2:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
@@ -1517,7 +1517,7 @@ ecSet1:					; Check	for (settable) function	name
 		ld	a, (Result)
 		cp	1
 		jp	z, ecSet2
-		call	sub_126B
+		call	VarList		; Variable/List	primitive
 ecSet2:
 		ld	a, (Token)
 		cp	11h		; Is it	'='?
@@ -1526,7 +1526,7 @@ ecSet2:
 		call	Expr		; Expression
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_33D6
+		call	z, AC47		; Set values
 ecSet3:					; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
@@ -1560,7 +1560,7 @@ ecUse2:					; Expression
 ecUse3:
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3BAC
+		call	z, AC65		; Make device current
 ecUse4:					; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
@@ -1568,7 +1568,7 @@ ecUse4:					; Command argument ending
 		jp	nz, ecUse2
 		ld	hl, bmFlag
 		ld	a, (hl)
-		or	00000001b
+		or	01h
 		ld	(hl), a
 		ret
 ; End of function ecUse
@@ -1661,7 +1661,7 @@ ecXecute1:				; String-Value expression
 		jp	z, ecXecute2
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_2B1D
+		call	z, AC26		; Remove string	from the stack
 		jp	ecXecute3
 ecXecute2:
 		ld	a, (bmActFL)
@@ -1749,7 +1749,7 @@ eczInsert1:				; String-Value expression
 eczInsert2:
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_4C9E
+		call	z, AC118	; Insert string	at PRGPT
 eczInsert3:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
@@ -1845,7 +1845,7 @@ eczOption1:
 		call	DevParam	; Device parameters
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_4CC9
+		call	z, AC119
 eczOption2:				; Command argument ending
 		call	ComArgEnd
 		ld	a, (Result)
@@ -1878,7 +1878,7 @@ ecPrint1:
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_4BF3
+		call	z, AC112	; PrgPT	to End
 		jp	ecPrint3
 ecPrint2:
 		call	sub_12AF
@@ -1978,7 +1978,7 @@ ecHangHalt:
 ecHangHalt1:				; Halt
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3977
+		call	z, bcHalt
 		ld	hl, bmFlag
 		ld	a, (hl)
 		or	00000001b
@@ -2006,7 +2006,8 @@ TransEnd:
 		ret
 ; End of function Trans
 ; =============== S U B	R O U T	I N E =======================================
-sub_126B:
+; Variable/List	primitive
+VarList:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, 1
 		ld	(SetSW), a
@@ -2015,27 +2016,27 @@ sub_126B:
 		call	z, ZeroToS	; Zero Top of Stack
 		ld	a, (Token)
 		cp	19h		; Is it	'('?
-		jp	z, loc_128B
+		jp	z, VarList1
 		call	GLVarName	; Global/Local variable	name
 		call	sub_2723
-		jp	loc_12A4
-loc_128B:				; Loads	to (Token) the token code of char (++pStkPos)
+		jp	VarList2
+VarList1:				; Loads	to (Token) the token code of char (++pStkPos)
 		call	GToken
 		call	GLVarName	; Global/Local variable	name
 		call	sub_2723
 		ld	a, (Token)
 		cp	15h		; Is it	','?
-		jp	z, loc_128B
+		jp	z, VarList1
 		cp	1Ah		; Is it	')'?
 		jp	nz, Error12	; Unmatched parentheses
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-loc_12A4:
+VarList2:
 		ld	a, 1
 		ld	(Result), a
 		ld	a, 0
 		ld	(SetSW), a
 		ret
-; End of function sub_126B
+; End of function VarList
 ; =============== S U B	R O U T	I N E =======================================
 sub_12AF:
 		call	SSChk		; Check	for room on the	syntax stack
@@ -2200,7 +2201,7 @@ Error19:
 Error20:
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_3FBA
+		call	z, AC76		; Unmark symbol	table after exclusive kill
 		ld	a, 20
 		call	PrintErr	; Outputs error	message
 ; End of function Error20
@@ -2700,7 +2701,7 @@ RoutineN:
 		ld	a, (Case)	; Syntax checking only
 		cp	4
 		jp	z, RoutineN1
-		call	NameLit		; Check	for a name literal
+		call	LitLabel	; Check	for a literal label
 		ld	a, (Result)
 		cp	1
 		jp	nz, Error28	; Illegal routine or label name
@@ -2741,7 +2742,7 @@ Label:
 		ld	a, (Case)
 		cp	4
 		jp	z, Label2
-		call	NameLit		; Check	for a name literal
+		call	LitLabel	; Check	for a literal label
 		ld	a, (Result)
 		cp	1
 		jp	z, Label1
@@ -2970,7 +2971,7 @@ sub_183B:
 		jp	z, loc_1898
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_4C3E
+		call	z, AC115	; Put integer -1 on ToS
 		jp	loc_1898
 loc_1865:				; Check	for integer literal
 		call	IntLit
@@ -2989,7 +2990,7 @@ loc_1871:
 		jp	z, loc_1898
 		ld	a, (bmActFL)
 		or	a
-		call	z, sub_4C3E
+		call	z, AC115	; Put integer -1 on ToS
 		jp	loc_1898
 loc_1891:
 		ld	a, (bmActFL)
@@ -3099,7 +3100,7 @@ LVarName:
 		jp	z, GVarNameEnd
 		xor	a
 		ld	(GLB), a
-		call	NameLit		; Check	for a name literal
+		call	LitLabel	; Check	for a literal label
 		ld	a, (Result)
 		cp	1
 		jp	z, Subscript
@@ -3130,8 +3131,8 @@ GVarName1:				; Loads	to (Token) the token code of char (++pStkPos)
 		jp	nz, GVarName2
 		call	NakedRef	; Naked	reference
 		jp	Subscript
-GVarName2:				; Check	for a name literal
-		call	NameLit
+GVarName2:				; Check	for a literal label
+		call	LitLabel
 		ld	a, (Result)
 		cp	1
 		jp	nz, Error23	; Illegal variable name
@@ -4222,9 +4223,9 @@ loc_21C5:				; Length of the	current	string (plus 1)
 		ld	(pLineBefore), hl ; Pointer to the previous routine line
 loc_2207:				; Pointer to the previous routine line
 		ld	hl, (pLineBefore)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ld	hl, (pStkPos)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ld	hl, (pTmp1)
 		ld	(pStkPos), hl
 		ld	(pStkStart), hl
@@ -4713,8 +4714,8 @@ CheckTrueV:
 		ret
 ; End of function CheckTrueV
 ; =============== S U B	R O U T	I N E =======================================
-; Check	for a name literal
-NameLit:
+; Check	for a literal label
+LitLabel:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, (Token)
 		cp	1		; Is it	'a' to 'z'?
@@ -4766,7 +4767,7 @@ NameLit4:
 		inc	ix
 NameLitEnd:
 		ret
-; End of function NameLit
+; End of function LitLabel
 ; =============== S U B	R O U T	I N E =======================================
 ; Check	for name indir during arg indir
 AC16:
@@ -5209,7 +5210,7 @@ loc_2A2E:
 		add	hl, bc
 		inc	hl
 		ld	(pTmp2), hl
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ret
 ; End of function sub_29C5
 ; =============== S U B	R O U T	I N E =======================================
@@ -5303,7 +5304,8 @@ PrintFF3:				; X position (BCD5)
 		ret
 ; End of function PrintFF
 ; =============== S U B	R O U T	I N E =======================================
-sub_2B1D:
+; Remove string	from the stack
+AC26:
 		call	SSChk		; Check	for room on the	syntax stack
 		dec	ix
 		dec	ix
@@ -5316,15 +5318,16 @@ sub_2B1D:
 		add	ix, bc
 		call	SSChk		; Check	for room on the	syntax stack
 		ret
-; End of function sub_2B1D
+; End of function AC26
 ; =============== S U B	R O U T	I N E =======================================
-sub_2B35:
+; Zero pointer ToS
+AC27:
 		call	SSChk		; (todo) Remove	this
 		ld	hl, 0
 		ld	(pTmp1), hl
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ret
-; End of function sub_2B35
+; End of function AC27
 ; =============== S U B	R O U T	I N E =======================================
 ; Outputs horizontal spacing (W	?x or R	?x)
 HSPC:
@@ -6269,7 +6272,7 @@ loc_32ED:
 		cp	0
 		jp	z, Error11	; String too long
 		ld	hl, (pTmp3)
-		ld	bc, 0FFFDh
+		ld	bc, -3
 		add	hl, bc
 		ld	(pTmp2), hl
 		ex	de, hl
@@ -6355,20 +6358,21 @@ bfCharEnd:
 		ret
 ; End of function bfChar
 ; =============== S U B	R O U T	I N E =======================================
-sub_33D6:
+; Set values
+AC47:
 		call	SSChk		; Check	for room on the	syntax stack
 		xor	a
 		ld	(STCnt), a
 		ld	a, (SetFL)
 		cp	1
-		jp	z, loc_3412
+		jp	z, AC471
 		ld	a, (VariableFL)	; 0 - Function : 1 - Variable
 		or	a
 		jp	nz, Error18	; Illegal character
 		ld	a, 1
 		ld	(STCnt), a
 		ld	hl, (pTmp1)
-		ld	bc, 0FFFEh
+		ld	bc, -2		; -(PTRLEN)
 		add	hl, bc
 		ld	(pTmp1), hl
 		ld	e, (hl)
@@ -6382,16 +6386,16 @@ sub_33D6:
 		sbc	hl, de
 		ld	(pTmp1), hl
 		ld	(SetBs), hl
-loc_3412:
+AC471:
 		ld	hl, (word_A049)
 		ld	de, 0
 		or	a
 		sbc	hl, de
-		jp	nz, loc_3657
+		jp	nz, AC4719
 		ld	hl, (SetBs)
 		ld	a, (hl)
 		cp	Dollar
-		jp	z, loc_3689
+		jp	z, AC4721
 		xor	a
 		ld	(NR), a
 		ld	(pTmp1), ix
@@ -6411,13 +6415,13 @@ loc_3412:
 		ld	(pTmp1), hl
 		ld	a, (byte_A6A4)
 		cp	1
-		jp	nz, loc_351A
+		jp	nz, AC475
 		ld	a, 1
 		ld	(byte_0549), a
 		call	sub_5198
 		ld	a, (Result)
 		cp	0
-		jp	z, loc_3510
+		jp	z, AC474
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
@@ -6427,7 +6431,7 @@ loc_3412:
 		ld	a, (byte_A694)
 		ld	hl, byte_0546
 		cp	(hl)
-		jp	c, loc_34C7
+		jp	c, AC472
 		ld	hl, byte_0546
 		sub	(hl)
 		ld	(I3), a
@@ -6457,8 +6461,8 @@ loc_3412:
 		ld	hl, (word_02F4)
 		ld	a, (byte_A694)
 		call	CopyAup		; Copy A bytes from (HL)->(DE) up
-		jp	loc_3502
-loc_34C7:
+		jp	AC473
+AC472:
 		ld	de, (word_050C)
 		ld	hl, (word_02F4)
 		ld	a, (byte_A694)
@@ -6482,28 +6486,28 @@ loc_34C7:
 		ld	hl, (word_050A)
 		ld	a, (byte_0547)
 		call	ShiftDn		; Shifts the stack towards its base
-loc_3502:
+AC473:
 		ld	a, (I2)
 		ld	(ix+0),	a
 		inc	ix
 		ld	(ix+0),	3
 		inc	ix
-loc_3510:
+AC474:
 		xor	a
 		ld	(byte_0549), a
 		ld	(byte_A6A4), a
-		jp	loc_3412
-loc_351A:
+		jp	AC471
+AC475:
 		ld	a, (STCnt)
 		or	a
-		jp	nz, loc_3528
+		jp	nz, AC476
 		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(STCnt), a
-loc_3528:
+AC476:
 		ld	hl, (SetBs)
 		ld	(pTmp1), hl
-loc_352E:
+AC477:
 		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(byte_04CC), a
@@ -6516,7 +6520,7 @@ loc_352E:
 		ld	(I1), a
 		ld	a, (NameLen)	; Length of the	current	variable name
 		and	10000000b
-		jp	z, loc_355F
+		jp	z, AC478
 		ld	a, 1
 		ld	(I1), a
 		ld	hl, NameLen	; Length of the	current	variable name
@@ -6526,7 +6530,7 @@ loc_352E:
 		ld	hl, (pTmp1)
 		ld	a, (NameLen)	; Length of the	current	variable name
 		ld	(hl), a
-loc_355F:
+AC478:
 		ld	hl, (pTmp1)
 		ld	c, (hl)
 		ld	b, 0
@@ -6538,10 +6542,10 @@ loc_355F:
 		ld	(tmpChar2), a
 		ld	a, 3
 		ld	(byte_A695), a
-loc_3578:
+AC479:
 		ld	a, (tmpChar2)
 		or	a
-		jp	z, loc_35A9
+		jp	z, AC4710
 		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(I4), a
@@ -6560,13 +6564,13 @@ loc_3578:
 		ld	(pTmp1), hl
 		ld	hl, tmpChar2
 		dec	(hl)
-		jp	loc_3578
-loc_35A9:
+		jp	AC479
+AC4710:
 		ld	hl, (pTmp1)
 		ld	(word_029A), hl
 		ld	a, (I1)
 		cp	1
-		jp	z, loc_3624
+		jp	z, AC4716
 		ld	a, (byte_A695)
 		ld	hl, NameLen	; Length of the	current	variable name
 		add	a, (hl)
@@ -6579,65 +6583,65 @@ loc_35A9:
 		ld	(word_02F2), hl
 		ld	a, (Result)
 		cp	0
-		jp	z, loc_35ED
+		jp	z, AC4712
 		ld	hl, (pVar)	; Points to a var in the symbol	table
 		ld	(pTmp2), hl
 		ld	a, (byte_A694)
 		cp	(hl)
-		jp	nz, loc_35EA
+		jp	nz, AC4711
 		call	sub_6C12
-		jp	loc_35F0
-loc_35EA:
+		jp	AC4713
+AC4711:
 		call	sub_6B28
-loc_35ED:
+AC4712:
 		call	sub_6B6F
-loc_35F0:
+AC4713:
 		ld	hl, STCnt
 		dec	(hl)
 		ld	hl, (word_029A)
 		ld	(pTmp1), hl
 		ld	a, (STCnt)
 		or	a
-		jp	nz, loc_352E
+		jp	nz, AC477
 		ld	ix, (SetBs)
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, (SetFL)
 		or	a
-		jp	z, loc_3614
+		jp	z, AC4714
 		xor	a
 		ld	(SetFL), a
 		ret
-loc_3614:
+AC4714:
 		ld	a, (byte_04B3)
 		cp	1
-		jp	z, locret_3623
-		ld	ix, (word_02C8)
+		jp	z, AC4715
+		ld	ix, (NSTOS)
 		call	SSChk		; Check	for room on the	syntax stack
-locret_3623:
+AC4715:
 		ret
-loc_3624:
+AC4716:
 		call	sub_70A8
 		call	FindKey		; Find place for a key
 		ld	a, (Result)
 		cp	1
-		jp	z, loc_3635
+		jp	z, AC4717
 		call	sub_784E
-loc_3635:
+AC4717:
 		call	sub_6CE3
 		ld	a, (Result)
 		cp	0
-		jp	z, loc_3643
+		jp	z, AC4718
 		call	sub_6C8A
-loc_3643:
+AC4718:
 		xor	a
 		ld	(byte_A69A), a
 		call	sub_7EF7
 		ld	hl, (word_A648)
-		ld	de, 0FFF9h	; 65529
+		ld	de, -7		; FFF9
 		add	hl, de
 		jp	nc, Error50	; Running out of global	space
-		jp	loc_35F0
-loc_3657:
+		jp	AC4713
+AC4719:
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
@@ -6656,11 +6660,11 @@ loc_3657:
 		ld	(word_A049), hl
 		ld	a, (StrLen)	; Length of the	current	string (plus 1)
 		ld	(byte_A6A3), a
-loc_3684:
+AC4720:
 		xor	a
 		ld	(SetFL), a
 		ret
-loc_3689:
+AC4721:
 		ld	hl, ibcdTemp0
 		call	StrToBCD	; Converts string on ToS to BCD	(pointed by HL)
 		dec	ix
@@ -6670,20 +6674,20 @@ loc_3689:
 		ld	a, 1
 		ld	hl, IODevice
 		cp	(hl)
-		jp	c, loc_3684
+		jp	c, AC4720
 		ld	a, (tmpChar2)
 		cp	59h		; 'Y'
-		jp	z, loc_36B6
+		jp	z, AC4722
 		ld	hl, (pDevX)	; X position (BCD5)
 		ld	de, ibcdTemp0
 		call	Copy5DEHL	; Copy 5 bytes from (DE) to (HL) ; SetI
-		jp	loc_3684
-loc_36B6:				; Y position (BCD5)
+		jp	AC4720
+AC4722:					; Y position (BCD5)
 		ld	hl, (pDevY)
 		ld	de, ibcdTemp0
 		call	Copy5DEHL	; Copy 5 bytes from (DE) to (HL) ; SetI
-		jp	loc_3684
-; End of function sub_33D6
+		jp	AC4720
+; End of function AC47
 ; =============== S U B	R O U T	I N E =======================================
 ; Body of BREAK	command
 bcBreak:
@@ -6743,7 +6747,7 @@ bczGo:
 		ld	a, (Mode)
 		cp	1
 		jp	nz, bczGoEnd
-		ld	a, (byte_A69D)
+		ld	a, (BreakFL)	; 1=On Break
 		or	a
 		jp	z, bczGoEnd
 		dec	ix
@@ -6782,7 +6786,7 @@ bczGo:
 		dec	hl
 		ld	(pStkPos), hl
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		ld	hl, byte_A69D
+		ld	hl, BreakFL	; 1=On Break
 		dec	(hl)
 		xor	a
 		ld	(bmFlag), a
@@ -6924,18 +6928,19 @@ loc_38A5:
 		jp	loc_381F
 ; End of function bfNxtOrd
 ; =============== S U B	R O U T	I N E =======================================
-sub_38CF:
+; Set value in for
+AC51:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (Vptr)
 		ld	(pTmp1), hl
 		ld	de, 2
 		add	hl, de
-		ld	(word_02C8), hl
-		call	sub_33D6
+		ld	(NSTOS), hl
+		call	AC47		; Set values
 		ld	(ix+0),	0
 		inc	ix
 		ret
-; End of function sub_38CF
+; End of function AC51
 ; =============== S U B	R O U T	I N E =======================================
 ; Body of $RANDOM function
 bfRandom:
@@ -7008,13 +7013,13 @@ Write2:
 		ret
 ; End of function Write
 ; =============== S U B	R O U T	I N E =======================================
-sub_3977:
+bcHalt:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, (bmFlag1)	; bit2:Routine not saved
 		and	00000100b
 		jp	nz, Error42	; Remove or save routine
-loc_3982:
-		call	sub_7367
+bcHalt2:				; Close	GLobals
+		call	GLBClose
 		ld	a, (DoSW)	; Are we inside	a DO command?
 		or	a
 		jp	nz, PrintErr18	; Yes.
@@ -7022,7 +7027,7 @@ loc_3982:
 		or	a
 		jp	nz, PrintErr18	; Yes.
 		jp	GameOver	; Terminate execution
-; End of function sub_3977
+; End of function bcHalt
 ; =============== S U B	R O U T	I N E =======================================
 ; Sets bit 1 of	bmActFlag
 SetAFb1:
@@ -7081,7 +7086,7 @@ bcHang:
 		ld	(Time),	a
 		ld	a, 1
 		ld	(Wait),	a
-		call	sub_9407
+		call	WasteTime	; Waste	time for the Hang command
 		xor	a
 		ld	(Wait),	a
 bcHangE:
@@ -7103,7 +7108,8 @@ KillAll:
 		ret
 ; End of function KillAll
 ; =============== S U B	R O U T	I N E =======================================
-sub_3A04:
+; Mark for exclusive kill
+AC62:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	IXtoHL		; Loads	the value pointed by IX	into HL
 		ld	(pIndex), hl
@@ -7116,10 +7122,10 @@ sub_3A04:
 		ld	a, (hl)
 		ld	(byte_04CC), a
 		or	a
-		jp	z, loc_3A2C
-		call	sub_3FBA
+		jp	z, AC621
+		call	AC76		; Unmark symbol	table after exclusive kill
 		jp	Error23		; Illegal variable name
-loc_3A2C:
+AC621:
 		ld	ix, (word_02F2)
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (word_02F2)
@@ -7130,8 +7136,8 @@ loc_3A2C:
 		call	sub_6A99
 		ld	a, (Result)
 		cp	0
-		jp	z, loc_3A75
-loc_3A49:
+		jp	z, AC623
+AC622:
 		ld	a, 1
 		ld	(KillFL), a
 		ld	hl, (pTmp1)
@@ -7154,32 +7160,33 @@ loc_3A49:
 		ld	hl, 5
 		or	a
 		sbc	hl, de
-		jp	z, locret_3A87
-loc_3A75:
+		jp	z, AC624
+AC623:
 		call	sub_6A25
 		ld	a, (Result)
 		cp	0
-		jp	z, locret_3A87
+		jp	z, AC624
 		ld	a, (I5)
 		or	a
-		jp	z, loc_3A49
-locret_3A87:
+		jp	z, AC622
+AC624:
 		ret
-; End of function sub_3A04
+; End of function AC62
 ; =============== S U B	R O U T	I N E =======================================
-sub_3A88:
+; Kill exclusive of marked variables
+AC63:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, (KillFL)
 		or	a
-		jp	nz, loc_3A96
+		jp	nz, AC631
 		call	KillAll		; Clears the symbol table
 		ret
-loc_3A96:				; Pointer to the symbol	table
+AC631:					; Pointer to the symbol	table
 		ld	hl, (pSymbolTbl)
 		ld	de, 2
 		add	hl, de
 		ld	(pTmp1), hl
-loc_3AA0:
+AC632:
 		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
@@ -7187,17 +7194,17 @@ loc_3AA0:
 		ld	hl, 5
 		or	a
 		sbc	hl, de
-		jp	z, loc_3ADC
+		jp	z, AC634
 		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
 		ld	(pTmp2), hl
 		ld	a, (hl)
 		and	10000000b
-		jp	nz, loc_3AC5
+		jp	nz, AC633
 		call	sub_6B28
-		jp	loc_3AA0
-loc_3AC5:
+		jp	AC632
+AC633:
 		ld	hl, (pTmp2)
 		ld	a, 01111111b
 		and	(hl)
@@ -7209,8 +7216,8 @@ loc_3AC5:
 		ld	hl, (pTmp1)
 		add	hl, de
 		ld	(pTmp1), hl
-		jp	loc_3AA0
-loc_3ADC:
+		jp	AC632
+AC634:
 		call	sub_6A53
 		ld	hl, (pIndex)
 		ex	de, hl
@@ -7219,9 +7226,10 @@ loc_3ADC:
 		inc	hl
 		ld	(hl), d
 		ret
-; End of function sub_3A88
+; End of function AC63
 ; =============== S U B	R O U T	I N E =======================================
-sub_3AEA:
+; Kill variable	+ descendents
+AC64:
 		call	SSChk		; Check	for room on the	syntax stack
 		dec	ix
 		ld	a, (ix+0)
@@ -7229,14 +7237,14 @@ sub_3AEA:
 		call	sub_50CC
 		ld	a, (IOTemp1)
 		cp	1
-		jp	nz, loc_3B72
+		jp	nz, AC645
 		call	sub_6A99
 		ld	hl, (pTmp1)
 		ld	(pTmp2), hl
 		ld	a, (Result)
 		cp	0
-		jp	z, loc_3B25
-loc_3B11:				; Number of symbols defined
+		jp	z, AC642
+AC641:					; Number of symbols defined
 		ld	hl, (SymCount)
 		dec	hl
 		ld	(SymCount), hl	; Number of symbols defined
@@ -7247,15 +7255,15 @@ loc_3B11:				; Number of symbols defined
 		ld	hl, (pTmp1)
 		add	hl, de
 		ld	(pTmp1), hl
-loc_3B25:
+AC642:
 		call	sub_6A25
 		ld	a, (Result)
 		cp	0
-		jp	z, loc_3B37
+		jp	z, AC643
 		ld	a, (I5)
 		or	a
-		jp	z, loc_3B11
-loc_3B37:
+		jp	z, AC641
+AC643:
 		ld	hl, (pTmp1)
 		dec	hl
 		ld	(pTmp1), hl
@@ -7278,59 +7286,60 @@ loc_3B37:
 		ld	(hl), e
 		inc	hl
 		ld	(hl), d
-loc_3B6A:
+AC644:
 		ld	ix, (word_02A4)
 		call	SSChk		; Check	for room on the	syntax stack
 		ret
-loc_3B72:
+AC645:
 		call	sub_7974
 		ld	hl, glbptrUnk
 		ld	de, Nil
 		call	cp3BVal		; Compare two 3	bytes values pointed by	(DE) and (HL)
-		jp	z, loc_3B6A
+		jp	z, AC644
 		call	sub_70A8
 		ld	(word_02B2), ix
 		call	FindKey		; Find place for a key
 		ld	a, (Result)
 		cp	0
-		jp	z, loc_3B6A
+		jp	z, AC644
 		ld	a, (byte_04CC)
 		or	a
-		jp	nz, loc_3BA3
+		jp	nz, AC646
 		call	sub_7A61
 		call	sub_776C
-		jp	loc_3B6A
-loc_3BA3:
+		jp	AC644
+AC646:
 		call	sub_6CE3
 		call	sub_73C4
-		jp	loc_3B6A
-; End of function sub_3AEA
+		jp	AC644
+; End of function AC64
 ; =============== S U B	R O U T	I N E =======================================
-sub_3BAC:
+; Make device current
+AC65:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	sub_570D
 		ld	hl, (pDevIsOpen) ; 0=Closed 1=Open
 		ld	a, (hl)
 		or	a
-		jp	nz, loc_3BC6
+		jp	nz, AC651
 		ld	a, (IODevice)
 		ld	(DeviceInUse), a
 		call	DevPrepare	; Prepares current device for use
 		jp	Error49		; Device not open
-loc_3BC6:
+AC651:
 		ld	a, (byte_A699)
 		or	a
-		jp	z, loc_3C20
+		jp	z, AC654
 		ld	a, (DeviceInUse)
 		cp	1
-		jp	z, loc_3C20
+		jp	z, AC654
 		cp	5
-		jp	z, loc_3C20
+		jp	z, AC654
 		or	a
-		jp	nz, loc_3BE4
+		jp	nz, AC652
 		call	sub_5663
-		jp	loc_3C20
-loc_3BE4:
+		jp	AC654
+AC652:
 		ld	a, (byte_A699)
 		add	a, 2
 		ld	(byte_A699), a
@@ -7340,7 +7349,7 @@ loc_3BE4:
 		ld	de, ibcdTemp1
 		ld	hl, ibcdVmin1
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
-loc_3BFE:
+AC653:
 		ld	(pTmp1), ix
 		ld	hl, (pTmp1)
 		dec	hl
@@ -7353,15 +7362,15 @@ loc_3BFE:
 		dec	(hl)
 		ld	a, (byte_A699)
 		cp	2
-		jp	nz, loc_3BFE
+		jp	nz, AC653
 		call	sub_57BC
-loc_3C20:
+AC654:
 		ld	a, (DeviceInUse)
 		ld	(IODevice), a
 		ld	ix, (pTmp6)
 		call	SSChk		; Check	for room on the	syntax stack
 		ret
-; End of function sub_3BAC
+; End of function AC65
 ; =============== S U B	R O U T	I N E =======================================
 ; Reads	a variable in the format *V
 ReadChar:
@@ -7433,7 +7442,7 @@ ReadCharEnd:
 		ld	(pTmp1), hl
 		ld	a, 1
 		ld	(byte_04B3), a
-		call	sub_33D6
+		call	AC47		; Set values
 		xor	a
 		ld	(byte_04B3), a
 		ret
@@ -7551,7 +7560,7 @@ ReadVarEnd:				; 0=Closed 1=Open
 		ld	(pTmp1), hl
 		ld	a, 1
 		ld	(byte_04B3), a
-		call	sub_33D6
+		call	AC47		; Set values
 		xor	a
 		ld	(byte_04B3), a
 		ld	a, 255
@@ -7711,9 +7720,9 @@ bcDo:
 		ld	(pLineBefore), hl ; Pointer to the previous routine line
 bcDo1:					; Pointer to the previous routine line
 		ld	hl, (pLineBefore)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ld	hl, (pStkPos)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ld	hl, byte_A671
 		call	sub_97D5
 		ld	hl, ibcdTemp1
@@ -7795,7 +7804,7 @@ bcQuit4:
 bcQuit5:				; Runs a pre-defined command line when loading
 		ld	a, (AutoexecFlag)
 		cp	3
-		jp	z, loc_3982
+		jp	z, bcHalt2
 		ld	a, 1
 		ld	(Mode),	a
 		ld	a, 2
@@ -7804,17 +7813,18 @@ bcQuitEnd:
 		ret
 ; End of function bcQuit
 ; =============== S U B	R O U T	I N E =======================================
-sub_3FBA:
+; Unmark symbol	table after exclusive kill
+AC76:
 		ld	a, (KillFL)
 		or	a
-		jp	z, locret_3FFC
+		jp	z, AC762
 		xor	a
 		ld	(KillFL), a
 		ld	hl, (pSymbolTbl) ; Pointer to the symbol table
 		ld	de, 2
 		add	hl, de
 		ld	(pTmp1), hl
-loc_3FCF:
+AC761:
 		ld	hl, (pTmp1)
 		ld	e, (hl)
 		inc	hl
@@ -7822,7 +7832,7 @@ loc_3FCF:
 		ld	hl, 5
 		or	a
 		sbc	hl, de
-		jp	z, locret_3FFC
+		jp	z, AC762
 		ld	hl, (pTmp1)
 		ld	de, 2
 		add	hl, de
@@ -7837,10 +7847,10 @@ loc_3FCF:
 		ld	hl, (pTmp1)
 		add	hl, de
 		ld	(pTmp1), hl
-		jp	loc_3FCF
-locret_3FFC:
+		jp	AC761
+AC762:
 		ret
-; End of function sub_3FBA
+; End of function AC76
 ; =============== S U B	R O U T	I N E =======================================
 ; Body of CLOSE	command
 bcClose:
@@ -8079,7 +8089,7 @@ sub_41F6:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	ExprToNum	; Convert expression to	numeric	value
 		ld	hl, FReal
-		call	sub_98DD
+		call	StrToNum	; Converts the string on ToS to	numeric
 		ret
 ; End of function sub_41F6
 ; =============== S U B	R O U T	I N E =======================================
@@ -8211,7 +8221,7 @@ sub_430C:
 		ld	(pStkPos), hl
 loc_4324:
 		ld	hl, (pStkPos)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ld	(pTmp1), ix
 		ld	hl, (pTmp1)
 		ld	bc, 0FFFDh
@@ -8305,8 +8315,8 @@ loc_4399:
 		ld	hl, (Vptr)
 		ld	(pTmp1), hl
 		ld	hl, (word_0502)
-		ld	(word_02C8), hl
-		call	sub_33D6
+		ld	(NSTOS), hl
+		call	AC47		; Set values
 		ld	a, 2
 		ld	(Case),	a
 		ret
@@ -8520,9 +8530,9 @@ loc_45A0:
 		ld	hl, (pTmp2)
 		dec	hl
 		ld	(pTmp2), hl
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ld	hl, (pStkPos)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ld	hl, Count
 		inc	(hl)
 		jp	loc_44DF
@@ -8612,7 +8622,7 @@ loc_4688:
 		ld	(pStkPos), hl
 loc_46BA:
 		ld	hl, (pStkPos)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ret
 loc_46C1:
 		ld	hl, (word_02F8)
@@ -8706,8 +8716,8 @@ loc_4785:
 		ld	hl, (Vptr)
 		ld	(pTmp1), hl
 		ld	hl, (word_0502)
-		ld	(word_02C8), hl
-		call	sub_33D6
+		ld	(NSTOS), hl
+		call	AC47		; Set values
 		ld	a, 1
 		ld	(Case),	a
 		ret
@@ -8724,7 +8734,7 @@ loc_47BA:
 		ld	(pStkPos), hl
 loc_47D6:
 		ld	hl, (pStkPos)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ret
 ; End of function sub_46E2
 ; =============== S U B	R O U T	I N E =======================================
@@ -8850,7 +8860,7 @@ sub_48D2:
 		ld	hl, (pRtnName)	; Pointer to the loaded	routine	name
 		ld	(pTmp1), hl
 		call	sub_5AA4
-		call	sub_5EB8
+		call	LineSet
 		call	sub_5D7A
 		ret
 ; End of function sub_48D2
@@ -8894,7 +8904,7 @@ loc_491D:
 		ld	a, (hl)
 		cp	1Ah
 		jp	z, locret_492C
-		call	sub_5F1D
+		call	LineWrite
 		jp	loc_491D
 locret_492C:
 		ret
@@ -8902,11 +8912,11 @@ locret_492C:
 ; =============== S U B	R O U T	I N E =======================================
 sub_492D:
 		call	SSChk		; Check	for room on the	syntax stack
-		call	sub_5EB8
+		call	LineSet
 		ld	hl, (pTmp2)
 		ld	(pTmp1), hl
 loc_4939:
-		call	sub_5F1D
+		call	LineWrite
 		ld	hl, (pTmp1)
 		ex	de, hl
 		ld	hl, (pTmp4)
@@ -8963,7 +8973,7 @@ loc_4997:
 		ld	(pTmp1), hl
 loc_49AC:
 		ld	hl, (pTmp1)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ld	a, (tmpChar2)
 		ld	(Token), a
 		ret
@@ -8990,19 +9000,21 @@ PushGlobal:
 		ret
 ; End of function PushGlobal
 ; =============== S U B	R O U T	I N E =======================================
-sub_49E3:
+; Dummy	routine	to fix STABK for Lock
+AC101:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	ix, (SetBs)
 		call	SSChk		; Check	for room on the	syntax stack
 		xor	a
 		ld	(SetFL), a
 		ret
-; End of function sub_49E3
+; End of function AC101
 ; =============== S U B	R O U T	I N E =======================================
-sub_49F2:
+; Do nothing
+AC102:
 		call	SSChk		; Check	for room on the	syntax stack
 		ret
-; End of function sub_49F2
+; End of function AC102
 ; =============== S U B	R O U T	I N E =======================================
 ; Body of XECUTE command
 bcXecute:
@@ -9188,9 +9200,9 @@ AC109:
 		ld	(pLineBefore), hl ; Pointer to the previous routine line
 loc_4B7E:				; Pointer to the previous routine line
 		ld	hl, (pLineBefore)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ld	hl, (pStkPos)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ld	a, (IndFL)	; Indirection flag
 		ld	(ix+0),	a
 		inc	ix
@@ -9247,20 +9259,21 @@ sub_4BEC:
 		ret
 ; End of function sub_4BEC
 ; =============== S U B	R O U T	I N E =======================================
-sub_4BF3:
+; PrgPT	to End
+AC112:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (pCurRtnLine) ; Pointer to current routine line
 		ex	de, hl
 		ld	hl, (pEndOfRtn)	; Pointer to the end of	the loaded routine
 		or	a
 		sbc	hl, de
-		jp	z, locret_4C0C
+		jp	z, AC1121
 		ld	hl, (pCurRtnLine) ; Pointer to current routine line
 		ld	(pTmp1), hl
-		call	sub_5F1D
-locret_4C0C:
+		call	LineWrite
+AC1121:
 		ret
-; End of function sub_4BF3
+; End of function AC112
 ; =============== S U B	R O U T	I N E =======================================
 sub_4C0D:
 		call	SSChk		; Check	for room on the	syntax stack
@@ -9288,12 +9301,13 @@ locret_4C3D:
 		ret
 ; End of function sub_4C0D
 ; =============== S U B	R O U T	I N E =======================================
-sub_4C3E:
+; Put integer -1 on ToS
+AC115:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, ibcdVmin1
 		call	CharToStr	; Convert char (0-255) to string and push it
 		ret
-; End of function sub_4C3E
+; End of function AC115
 ; =============== S U B	R O U T	I N E =======================================
 ; Body of $ZEXISTS function
 bfzExists:
@@ -9335,7 +9349,8 @@ DevNtoShort:
 		ret
 ; End of function DevNtoShort
 ; =============== S U B	R O U T	I N E =======================================
-sub_4C9E:
+; Insert string	at PRGPT
+AC118:
 		call	SSChk		; Check	for room on the	syntax stack
 		dec	ix
 		dec	ix
@@ -9350,27 +9365,27 @@ sub_4C9E:
 		add	hl, bc
 		ld	(word_02B0), hl
 		ld	(pTmp5), hl
-		call	sub_5DB5
+		call	LineInsert	; Insert line ar PrgPT
 		ld	ix, (pTmp5)
 		call	SSChk		; Check	for room on the	syntax stack
 		ret
-; End of function sub_4C9E
+; End of function AC118
 ; =============== S U B	R O U T	I N E =======================================
-sub_4CC9:
+AC119:
 		call	SSChk		; Check	for room on the	syntax stack
 		dec	ix
 		ld	a, (ix+0)
 		ld	(Count), a
-loc_4CD4:
+AC1191:
 		ld	a, (Count)
 		or	a
-		jp	z, loc_4D29
+		jp	z, AC1194
 		dec	ix
 		dec	ix
 		ld	a, (ix+0)
 		ld	(StrLen), a	; Length of the	current	string (plus 1)
 		or	a
-		jp	z, loc_4D22
+		jp	z, AC1193
 		cp	1
 		jp	nz, Error20	; Illegal expression
 		dec	ix
@@ -9385,24 +9400,24 @@ loc_4CD4:
 		ld	(tmpChar1), a
 		ld	a, (Count)
 		cp	1
-		jp	nz, loc_4D19
+		jp	nz, AC1192
 		ld	a, (tmpChar1)
 		ld	(RoutinesDR), a	; Default drive	for routines
 		call	Null2		; Does nothing
-		jp	loc_4D22
-loc_4D19:
-		call	sub_7367
+		jp	AC1193
+AC1192:					; Close	GLobals
+		call	GLBClose
 		ld	a, (tmpChar1)
 		ld	(GlobalsDR), a	; Default drive	for globals
-loc_4D22:
+AC1193:
 		ld	hl, Count
 		dec	(hl)
-		jp	loc_4CD4
-loc_4D29:
-		call	sub_7367
+		jp	AC1191
+AC1194:					; Close	GLobals
+		call	GLBClose
 		call	DiskReset	; Reset	disk system
 		ret
-; End of function sub_4CC9
+; End of function AC119
 ; =============== S U B	R O U T	I N E =======================================
 sub_4D30:
 		dec	ix
@@ -9468,7 +9483,7 @@ sub_4D6E:
 		ld	l, a
 		ld	h, 0
 		ld	(pTmp2), hl
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ret
 ; End of function sub_4D6E
 ; =============== S U B	R O U T	I N E =======================================
@@ -9476,10 +9491,10 @@ sub_4DB3:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (Vptr)
 		ld	(pTmp1), hl
-		ld	(word_02C8), ix
+		ld	(NSTOS), ix
 		ld	hl, FReal
 		call	NumToStr	; Converts a number pointed by HL to a string and push it
-		call	sub_33D6
+		call	AC47		; Set values
 		ld	(pTmp1), ix
 		ld	a, (byte_04F3)
 		ld	(I1), a
@@ -10471,9 +10486,9 @@ sub_55A0:
 		ld	(pStkStart), hl
 loc_55C5:
 		ld	hl, (pStkStart)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ld	hl, (pStkPos)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ret
 ; End of function sub_55A0
 ; =============== S U B	R O U T	I N E =======================================
@@ -10517,7 +10532,7 @@ sub_55D2:
 		ld	(ForSW), a
 		ld	(DoSW),	a
 		ld	(IODevice), a
-		ld	hl, byte_A69D
+		ld	hl, BreakFL	; 1=On Break
 		inc	(hl)
 		ld	a, 1
 		ld	(Mode),	a
@@ -11400,7 +11415,7 @@ loc_5D65:
 ; =============== S U B	R O U T	I N E =======================================
 sub_5D7A:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (byte_A69D)
+		ld	a, (BreakFL)	; 1=On Break
 		or	a
 		jp	nz, Error44	; Illegal command during BREAK
 		ld	hl, (pTmp2)
@@ -11425,9 +11440,10 @@ sub_5D7A:
 		ret
 ; End of function sub_5D7A
 ; =============== S U B	R O U T	I N E =======================================
-sub_5DB5:
+; Insert line ar PrgPT
+LineInsert:
 		call	SSChk		; Check	for room on the	syntax stack
-		ld	a, (byte_A69D)
+		ld	a, (BreakFL)	; 1=On Break
 		or	a
 		jp	nz, Error44	; Illegal command during BREAK
 		ld	a, (CmdLineSz)	; Size of the command line
@@ -11439,14 +11455,14 @@ sub_5DB5:
 		ld	(pIndex), hl
 		xor	a
 		ld	(tmpChar2), a
-loc_5DD6:
+LineInsert1:
 		ld	hl, (pIndex)
 		ld	a, (hl)
 		cp	Space
-		jp	z, loc_5DF6
+		jp	z, LineInsert2
 		ld	a, (hl)
 		cp	9
-		jp	z, loc_5DF6
+		jp	z, LineInsert2
 		ld	a, (hl)
 		cp	0Dh
 		jp	z, Error00	; Missing linestart character
@@ -11454,11 +11470,11 @@ loc_5DD6:
 		ld	(pIndex), hl
 		ld	hl, tmpChar2
 		inc	(hl)
-		jp	loc_5DD6
-loc_5DF6:
+		jp	LineInsert1
+LineInsert2:
 		ld	a, (tmpChar2)
 		or	a
-		jp	z, loc_5E41
+		jp	z, LineInsert4
 		ld	a, 1
 		ld	(byte_A69F), a
 		ld	hl, (pStkPos)
@@ -11467,15 +11483,15 @@ loc_5DF6:
 		dec	hl
 		ld	(pStkPos), hl
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-		call	NameLit		; Check	for a name literal
+		call	LitLabel	; Check	for a literal label
 		ld	a, (Result)
 		cp	1
-		jp	z, loc_5E28
+		jp	z, LineInsert3
 		call	NumLabel	; Check	for a numeric label
 		ld	a, (Result)
 		cp	0
 		jp	z, Error28	; Illegal routine or label name
-loc_5E28:				; Search routine for label
+LineInsert3:				; Search routine for label
 		call	FNDLB
 		ld	a, (Result)
 		cp	1
@@ -11486,7 +11502,7 @@ loc_5E28:				; Search routine for label
 		dec	hl
 		ld	(pStkPos), hl
 		call	GToken		; Loads	to (Token) the token code of char (++pStkPos)
-loc_5E41:				; Pointer to the end of	the loaded routine
+LineInsert4:				; Pointer to the end of	the loaded routine
 		ld	hl, (pEndOfRtn)
 		ld	a, (CmdLineSz)	; Size of the command line
 		ld	c, a
@@ -11498,9 +11514,9 @@ loc_5E41:				; Pointer to the end of	the loaded routine
 		ld	de, (pSymbolTbl) ; Pointer to the symbol table
 		or	a
 		sbc	hl, de
-		jp	c, loc_5E5F
+		jp	c, LineInsert5
 		jp	Error10		; Program larger than partition
-loc_5E5F:				; Pointer to the end of	the loaded routine
+LineInsert5:				; Pointer to the end of	the loaded routine
 		ld	hl, (pEndOfRtn)
 		ld	(pTmp2), hl
 		ld	hl, (pIndex)
@@ -11538,9 +11554,9 @@ loc_5E5F:				; Pointer to the end of	the loaded routine
 		or	00000100b
 		ld	(hl), a
 		ret
-; End of function sub_5DB5
+; End of function LineInsert
 ; =============== S U B	R O U T	I N E =======================================
-sub_5EB8:
+LineSet:
 		call	SSChk		; Check	for room on the	syntax stack
 		call	MV2LN		; Move Ptr1 to Lineref
 		ld	a, (Result)
@@ -11550,21 +11566,21 @@ sub_5EB8:
 		ld	(pTmp4), hl
 		ld	a, (Case)
 		cp	1
-		jp	nz, loc_5EE5
-loc_5ED3:
+		jp	nz, LineSet2
+LineSet1:
 		ld	hl, (pTmp4)
 		inc	hl
 		ld	(pTmp4), hl
 		ld	a, (hl)
 		cp	0Ah
-		jp	nz, loc_5ED3
+		jp	nz, LineSet1
 		inc	hl
 		ld	(pTmp4), hl
 		ret
-loc_5EE5:
+LineSet2:
 		ld	a, (Case)
 		cp	2
-		jp	nz, loc_5F16
+		jp	nz, LineSet4
 		call	MV2LN		; Move Ptr1 to Lineref
 		ld	a, (Result)
 		or	a
@@ -11574,23 +11590,23 @@ loc_5EE5:
 		or	a
 		sbc	hl, de
 		jp	c, Error34	; Invalid line reference
-loc_5F04:
+LineSet3:
 		ld	hl, (pTmp4)
 		inc	hl
 		ld	(pTmp4), hl
 		ld	a, (hl)
 		cp	0Ah
-		jp	nz, loc_5F04
+		jp	nz, LineSet3
 		inc	hl
 		ld	(pTmp4), hl
 		ret
-loc_5F16:				; Pointer to the end of	the loaded routine
+LineSet4:				; Pointer to the end of	the loaded routine
 		ld	hl, (pEndOfRtn)
 		ld	(pTmp4), hl
 		ret
-; End of function sub_5EB8
+; End of function LineSet
 ; =============== S U B	R O U T	I N E =======================================
-sub_5F1D:
+LineWrite:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, (pTmp1)
 		ld	(pTmp3), hl
@@ -11599,7 +11615,7 @@ sub_5F1D:
 		ld	hl, (pDevIsOpen) ; 0=Closed 1=Open
 		ld	a, (hl)
 		and	00001000b
-		jp	nz, loc_5F44
+		jp	nz, LineWrite1
 		ld	hl, (pDevBuffer)
 		ld	e, (hl)
 		inc	hl
@@ -11610,14 +11626,14 @@ sub_5F1D:
 		ld	(hl), d
 		ld	hl, (word_02E4)
 		ld	(hl), 0
-loc_5F44:
+LineWrite1:
 		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(tmpChar1), a
 		cp	Space
-		jp	z, loc_5F6E
+		jp	z, LineWrite2
 		cp	9
-		jp	z, loc_5F6E
+		jp	z, LineWrite2
 		call	writeChar	; Outputs the character	on A to	the current IODevice
 		ld	hl, tmpChar2
 		inc	(hl)
@@ -11626,21 +11642,21 @@ loc_5F44:
 		ld	(pTmp1), hl
 		ld	a, (tmpChar1)
 		cp	0Ah
-		jp	z, loc_5FC5
-		jp	loc_5F44
-loc_5F6E:
+		jp	z, LineWrite7
+		jp	LineWrite1
+LineWrite2:
 		ld	a, 0Ch
 		ld	hl, tmpChar2
 		cp	(hl)
-		jp	c, loc_5F81
+		jp	c, LineWrite3
 		ld	hl, tmpChar2
 		sub	(hl)
 		ld	(NameLen), a	; Length of the	current	variable name
-		jp	loc_5F86
-loc_5F81:
+		jp	LineWrite4
+LineWrite3:
 		ld	a, 5
 		ld	(NameLen), a	; Length of the	current	variable name
-loc_5F86:
+LineWrite4:
 		ld	a, Space
 		ld	(tmpChar1), a
 		call	writeChar	; Outputs the character	on A to	the current IODevice
@@ -11648,18 +11664,18 @@ loc_5F86:
 		dec	(hl)
 		ld	a, (NameLen)	; Length of the	current	variable name
 		or	a
-		jp	nz, loc_5F86
-loc_5F99:
+		jp	nz, LineWrite4
+LineWrite5:
 		ld	hl, (pTmp1)
 		inc	hl
 		ld	(pTmp1), hl
 		ld	a, (hl)
 		cp	Space
-		jp	z, loc_5F99
+		jp	z, LineWrite5
 		ld	a, (hl)
 		cp	9
-		jp	z, loc_5F99
-loc_5FAC:
+		jp	z, LineWrite5
+LineWrite6:
 		ld	hl, (pTmp1)
 		ld	a, (hl)
 		ld	(tmpChar1), a
@@ -11669,8 +11685,8 @@ loc_5FAC:
 		ld	(pTmp1), hl
 		ld	a, (tmpChar1)
 		cp	0Ah
-		jp	nz, loc_5FAC
-loc_5FC5:				; 0=Closed 1=Open
+		jp	nz, LineWrite6
+LineWrite7:				; 0=Closed 1=Open
 		ld	hl, (pDevIsOpen)
 		ld	a, (hl)
 		or	00001000b
@@ -11682,7 +11698,7 @@ loc_5FC5:				; 0=Closed 1=Open
 		ld	de, ibcdV0
 		call	Copy5DEHL	; Copy 5 bytes from (DE) to (HL) ; SetI
 		ret
-; End of function sub_5F1D
+; End of function LineWrite
 ; =============== S U B	R O U T	I N E =======================================
 sub_5FDE:
 		call	SSChk		; Check	for room on the	syntax stack
@@ -12229,7 +12245,7 @@ SaveRtn1:
 		ld	hl, SaveRtnBuf
 		ld	(pTmp3), hl
 		ld	hl, (pTmp1)
-		ld	de, 0FF80h
+		ld	de, 65408
 		add	hl, de
 		jp	nc, SaveRtn2
 		ld	bc, (pTmp4)
@@ -13348,13 +13364,13 @@ locret_6DEA:
 sub_6DEB:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	hl, byte_0518
-		call	sub_97EC
+		call	SetD		; Set disk block value
 		ld	hl, byte_0524
-		call	sub_97EC
+		call	SetD		; Set disk block value
 		ld	hl, byte_0512
-		call	sub_97EC
+		call	SetD		; Set disk block value
 		ld	hl, (word_A640)
-		call	sub_97BE
+		call	PushT		; Push onto the	stack
 		ld	a, (byte_A695)
 		ld	(ix+0),	a
 		inc	ix
@@ -13430,7 +13446,7 @@ loc_6E1E:
 		ld	hl, byte_0518
 		call	sub_980F
 		ld	hl, byte_052D
-		call	sub_97EC
+		call	SetD		; Set disk block value
 		ld	a, (byte_04DF)
 		ld	(ix+0),	a
 		inc	ix
@@ -13958,7 +13974,8 @@ locret_7366:
 		ret
 ; End of function sub_7305
 ; =============== S U B	R O U T	I N E =======================================
-sub_7367:
+; Close	GLobals
+GLBClose:
 		call	SSChk		; Check	for room on the	syntax stack
 		ld	a, (bIsGlbOpen)
 		cp	0
@@ -14003,7 +14020,7 @@ loc_73BB:				; Close	globals	file
 		ld	(bIsGlbOpen), a
 locret_73C3:
 		ret
-; End of function sub_7367
+; End of function GLBClose
 ; =============== S U B	R O U T	I N E =======================================
 sub_73C4:
 		call	SSChk		; Check	for room on the	syntax stack
@@ -14499,7 +14516,7 @@ loc_7830:
 		ld	hl, byte_053F
 		call	sub_980F
 		call	sub_9B7C
-		call	sub_7367
+		call	GLBClose	; Close	GLobals
 locret_784D:
 		ret
 ; End of function sub_776C
@@ -14775,7 +14792,7 @@ loc_7A93:
 		ld	(ix+0),	a
 		inc	ix
 		ld	hl, byte_0512
-		call	sub_97EC
+		call	SetD		; Set disk block value
 		ld	de, byte_0512
 		ld	hl, (pIndex)
 		call	sub_980F
@@ -16487,7 +16504,7 @@ PrintErr:
 		ld	hl, (pPlus1000)
 		ld	sp, hl
 		xor	a
-		ld	(byte_A69D), a
+		ld	(BreakFL), a	; 1=On Break
 		ld	(byte_A6A3), a
 PrintErr1:
 		ld	a, (byte_A69F)
@@ -16710,7 +16727,7 @@ PrintErr17:
 PrintErr18:
 		ld	sp, (pPlus1000)
 		xor	a
-		ld	(byte_A69D), a
+		ld	(BreakFL), a	; 1=On Break
 		ld	(byte_A69C), a
 PrintErr19:				; Outputs a CrLf
 		call	putCrLf
@@ -16718,7 +16735,7 @@ PrintErr19:				; Outputs a CrLf
 		ld	(DeviceInUse), a
 		call	DevPrepare	; Prepares current device for use
 		call	sub_8B17
-		ld	a, (byte_A69D)
+		ld	a, (BreakFL)	; 1=On Break
 		or	a
 		jp	z, PrintErr20
 		call	sub_8B22
@@ -18403,22 +18420,23 @@ loc_9403:				; Push BCD into	the stack
 		ret
 ; End of function sub_939D
 ; =============== S U B	R O U T	I N E =======================================
-sub_9407:
+; Waste	time for the Hang command
+WasteTime:
 		ld	de, ibcdTemp0
 		ld	hl, ibcdV8000
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
 		ld	hl, ibcdTemp0
 		ld	c, 5
-loc_9415:				; Decrements by	1 the C	bytes long BCD pointed by (HL)
+WasteTime1:				; Decrements by	1 the C	bytes long BCD pointed by (HL)
 		call	DbcdHL
 		call	lZtest		; Tests	a C bytes long BCD pointed by (HL) for zero
-		jr	nz, loc_9415
+		jr	nz, WasteTime1
 		ld	hl, HangTime
 		call	DbcdHL		; Decrements by	1 the C	bytes long BCD pointed by (HL)
 		call	lZtest		; Tests	a C bytes long BCD pointed by (HL) for zero
-		jr	nz, sub_9407
+		jr	nz, WasteTime	; Waste	time for the Hang command
 		ret
-; End of function sub_9407
+; End of function WasteTime
 ; =============== S U B	R O U T	I N E =======================================
 ; Returns nothing as this is CP/M
 GetCurTime:
@@ -19207,7 +19225,7 @@ sub_97AE:
 		ld	a, c
 		or	b
 		ret	z
-		jr	sub_97FB
+		jr	SetI1
 ; End of function sub_97AE
 ; =============== S U B	R O U T	I N E =======================================
 sub_97B3:
@@ -19215,7 +19233,7 @@ sub_97B3:
 		ret	z
 		ld	c, a
 		ld	b, 0
-		jr	sub_97FB
+		jr	SetI1
 ; End of function sub_97B3
 ; =============== S U B	R O U T	I N E =======================================
 ; No references	to here
@@ -19226,7 +19244,8 @@ sub_97BA:
 		ex	de, hl
 ; End of function sub_97BA
 ; =============== S U B	R O U T	I N E =======================================
-sub_97BE:
+; Push onto the	stack
+PushT:
 		ld	(ix+0),	l
 		inc	ix
 		ld	(ix+0),	h
@@ -19238,7 +19257,7 @@ sub_97BE:
 		sbc	hl, sp
 		jp	p, Error01	; Stack	overflow
 		ret
-; End of function sub_97BE
+; End of function PushT
 ; =============== S U B	R O U T	I N E =======================================
 sub_97D5:
 		ld	a, (hl)
@@ -19247,7 +19266,7 @@ sub_97D5:
 		ld	c, a
 		ld	b, 0
 		inc	hl
-		call	sub_97FB
+		call	SetI1
 loc_97E0:
 		ld	(ix+0),	a
 		inc	ix
@@ -19256,20 +19275,21 @@ loc_97E0:
 		ret
 ; End of function sub_97D5
 ; =============== S U B	R O U T	I N E =======================================
-sub_97EC:
+; Set disk block value
+SetD:
 		ld	bc, 3
-		jr	sub_97FB
-; End of function sub_97EC
+		jr	SetI1
+; End of function SetD
 ; =============== S U B	R O U T	I N E =======================================
 ; No references	to here
 sub_97F1:
 		ld	bc, 4
-		jr	sub_97FB
+		jr	SetI1
 		ld	bc, 5
-		jr	sub_97FB
+		jr	SetI1
 ; End of function sub_97F1
 ; =============== S U B	R O U T	I N E =======================================
-sub_97FB:
+SetI1:
 		push	ix
 		pop	de
 		add	ix, bc
@@ -19281,7 +19301,7 @@ sub_97FB:
 		jp	p, Error01	; Stack	overflow
 		pop	hl
 		ret
-; End of function sub_97FB
+; End of function SetI1
 ; =============== S U B	R O U T	I N E =======================================
 sub_980E:
 		ex	de, hl
@@ -19472,7 +19492,8 @@ StrToBCDEnd:
 		ret
 ; End of function StrToBCD
 ; =============== S U B	R O U T	I N E =======================================
-sub_98DD:
+; Converts the string on ToS to	numeric
+StrToNum:
 		push	hl
 		push	de
 		push	bc
@@ -19503,9 +19524,9 @@ sub_98DD:
 		dec	de
 		ld	b, a
 		or	a
-		jr	z, loc_9906
+		jr	z, StrToNum2
 		dec	c
-loc_9906:
+StrToNum2:
 		ld	a, c
 		sub	b
 		ld	(de), a
@@ -19514,7 +19535,7 @@ loc_9906:
 		pop	de
 		pop	hl
 		ret
-; End of function sub_98DD
+; End of function StrToNum
 ; =============== S U B	R O U T	I N E =======================================
 sub_990E:
 		ld	a, (byte_04FD)
@@ -19524,60 +19545,60 @@ sub_990E:
 		ld	hl, ibcdV3060
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
 loc_991D:
-		call	sub_9926
+		call	getChar
 		ld	(tmpChar1), a
 		jp	loc_99B8
 ; End of function sub_990E
 ; =============== S U B	R O U T	I N E =======================================
-sub_9926:
+getChar:
 		push	hl
 		push	de
 		push	bc
-loc_9929:				; Direct console I/O
+getChar1:				; Direct console I/O
 		ld	c, 6
 		ld	e, 255		; ReadChar
 		call	BDOScall	; Makes	a call to the CP/M BDOS
 		or	a		; Anything returned?
-		jr	z, loc_9967	; No.
+		jr	z, getChar5	; No.
 		cp	7		; Is it	Ctrl-G?
-		jr	nz, loc_9963	; No.
-loc_9937:				; Direct console I/O
+		jr	nz, getChar4	; No.
+getChar2:				; Direct console I/O
 		ld	c, 6
 		ld	e, 255		; ReadChar
 		call	BDOScall	; Makes	a call to the CP/M BDOS
 		or	a		; Anything returned?
-		jr	z, loc_994B	; No.
+		jr	z, getChar3	; No.
 		cp	7		; Is it	Ctrl-G?
-		jr	z, loc_9929	; Yes.
+		jr	z, getChar1	; Yes.
 		ld	c, 4		; Auxiliary (punch) out
 		ld	e, a
 		call	BDOScall	; Makes	a call to the CP/M BDOS
-loc_994B:				; Check	reader device availability
+getChar3:				; Check	reader device availability
 		call	InPort6
-		jr	z, loc_9937
+		jr	z, getChar2
 		ld	c, 3		; Auxiliary (reader) input
 		call	BDOScall	; Makes	a call to the CP/M BDOS
 		or	a
-		jr	z, loc_9937
+		jr	z, getChar2
 		and	01111111b	; Strip	out high bit
 		ld	e, a		; WriteChar
 		ld	c, 6		; Direct console I/O
 		call	BDOScall	; Makes	a call to the CP/M BDOS
-		jp	loc_9937
-loc_9963:
+		jp	getChar2
+getChar4:
 		pop	bc
 		pop	de
 		pop	hl
 		ret
-loc_9967:
+getChar5:
 		ld	a, (byte_04FD)
 		or	a
-		jr	z, loc_9929
+		jr	z, getChar1
 		ld	hl, ibcdTemp0
 		ld	c, 5
 		call	DbcdHL		; Decrements by	1 the C	bytes long BCD pointed by (HL)
 		call	lZtest		; Tests	a C bytes long BCD pointed by (HL) for zero
-		jr	nz, loc_9929
+		jr	nz, getChar1
 		ld	hl, ibcdV3060
 		ld	de, ibcdTemp0
 		call	Copy5HLDE	; Copy 5 bytes from (HL) to (DE)
@@ -19585,12 +19606,12 @@ loc_9967:
 		ld	c, 5
 		call	DbcdHL		; Decrements by	1 the C	bytes long BCD pointed by (HL)
 		call	lZtest		; Tests	a C bytes long BCD pointed by (HL) for zero
-		jr	nz, loc_9929
+		jr	nz, getChar1
 		xor	a
 		ld	(IfSW),	a
 		ld	a, 0Dh
-		jr	loc_9963
-; End of function sub_9926
+		jr	getChar4
+; End of function getChar
 ; =============== S U B	R O U T	I N E =======================================
 sub_9998:
 		ld	a, (byte_04FD)
@@ -19606,7 +19627,7 @@ loc_99AB:				; Device 0 (console) buffer
 		ld	hl, D0Buffer
 		ld	c, 0
 loc_99B0:
-		call	sub_9926
+		call	getChar
 		cp	0Dh
 		jr	nz, loc_99C7
 		ld	(hl), a
@@ -19623,15 +19644,15 @@ loc_99C7:
 		jp	z, loc_99E5
 		cp	Space
 		jr	nc, loc_9A1B
-		cp	9
+		cp	9		; ^I
 		jr	z, loc_9A1B
-		cp	3
+		cp	3		; ^C
 		jp	z, PrintErr18
-		cp	1
+		cp	1		; ^A
 		jr	nz, loc_99E1
 		ld	d, 0
 		jr	loc_99B0
-loc_99E1:
+loc_99E1:				; ^H
 		cp	8
 		jr	nz, loc_99F5
 loc_99E5:
@@ -20698,7 +20719,7 @@ byte_A699:	db 0
 byte_A69A:	db 0
 		db 0
 byte_A69C:	db 0
-byte_A69D:	db 0
+BreakFL:	db 0			; 1=On Break
 byte_A69E:	db 0
 byte_A69F:	db 0
 bBreakVal:	db 1			; Value	passed to BREAK	command
