@@ -9,6 +9,8 @@
 BOOT:		equ	0000h
 BDOS:		equ	0005h
 BDOSaddr:	equ	0006h
+MumpsFCB:	equ	005ch
+FileReg:	equ	MumpsFCB+32
 		org	0100h
 ; ---------------------------------------------------------------------------
 		ld	hl, 0
@@ -477,10 +479,10 @@ Enough:		db 0Dh,0Ah
 		db 'Is that enough room? (Y/N) $'
 NoRoom:		db 0Dh,0Ah
 		db 'Not enough room for GLOBAL buffers$'
-MumpsFCB:	db    0
-		db 'MUMPS   COM'
-		ds    20
-FileReg:	ds    4
+;MumpsFCB:	db    0
+;		db 'MUMPS   COM'
+;		ds    20
+;FileReg:	ds    4
 DiskBufLoc:	dw    0			; Location of the disk buffer
 SaveSP:		dw    0			; Save the stack pointer here
 		ds    11
