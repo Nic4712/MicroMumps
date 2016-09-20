@@ -4,11 +4,10 @@
 ; marcelo.f.dantas@gmail.com
 ; ===========================================================================
 ;
-		fname "SETGLOB.COM"
-
-BOOT:		equ	0000h
-BDOS:		equ	0005h
 		org	0100h
+; ---------------------------------------------------------------------------
+BOOT		equ	0000h
+BDOS		equ	0005h
 ; ---------------------------------------------------------------------------
 		ld	hl, 0
 		add	hl, sp
@@ -466,4 +465,4 @@ iBUFFER:	db 1			; Buffer for reading console input
 BUFFER:		ds 40
 ;
 		ds 32
-Stack:		db '$'	
+Stack:		db '$'

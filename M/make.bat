@@ -1,16 +1,17 @@
 @echo off
-del MUMPS.COM
-del MUMPSB.COM
-del SETMUMPS.COM
-del SETGLOB.COM
+if exist MUMPS.COM del MUMPS.COM
+if exist MUMPSB.COM del MUMPSB.COM
+if exist SETMUMPS.COM del SETMUMPS.COM
+if exist SETGLOB.COM del SETGLOB.COM
+if exist MUMPS.LST del MUMPS.LST
+if exist MUMPSB.LST del MUMPSB.LST
+if exist SETMUMPS.LST del SETMUMPS.LST
+if exist SETGLOB.LST del SETGLOB.LST
 echo ++++++++++++++++++ Building MUMPS.COM
-tniasm mumps.asm
+zmac -Ssgo MUMPS.COM MUMPS.ASM
 echo ++++++++++++++++++ Building MUMPSB.COM
-tniasm mumpsb.asm
+zmac -Ssgo MUMPSB.COM MUMPSB.ASM
 echo ++++++++++++++++++ Building SETMUMPS.COM
-tniasm setmumps.asm
+zmac -Ssgo SETMUMPS.COM SETMUMPS.ASM
 echo ++++++++++++++++++ Building SETGLOB.COM
-tniasm setglob.asm
-del tniasm.out
-del tniasm.tmp
-del tniasm.sym
+zmac -Ssgo SETGLOB.COM SETGLOB.ASM

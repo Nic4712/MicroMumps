@@ -1,8 +1,9 @@
 @echo off
-del MUMPS.COM
-del MUMPSB.COM
-del SETMUMPS.COM
-del SETGLOB.COM
-del tniasm.out
-del tniasm.tmp
-del tniasm.sym
+if exist MUMPS.COM del MUMPS.COM
+if exist MUMPSB.COM del MUMPSB.COM
+if exist SETMUMPS.COM del SETMUMPS.COM
+if exist SETGLOB.COM del SETGLOB.COM
+if exist MUMPS.LST del MUMPS.LST
+if exist MUMPSB.LST del MUMPSB.LST
+if exist SETMUMPS.LST del SETMUMPS.LST
+if exist SETGLOB.LST del SETGLOB.LST

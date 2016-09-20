@@ -6,7 +6,6 @@
 ;
 ; Makefile for the text file version
 ;
-BINMODE:
-		fname	"MUMPSB.COM"
+BINMODE		equ	1
 		include	"mumps2.asm"
 ;

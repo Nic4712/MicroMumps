@@ -4,14 +4,13 @@
 ; marcelo.f.dantas@gmail.com
 ; ===========================================================================
 ;
-		fname "SETMUMPS.COM"
-
-BOOT:		equ	0000h
-BDOS:		equ	0005h
-BDOSaddr:	equ	0006h
-MumpsFCB:	equ	005ch
-FileReg:	equ	MumpsFCB+32
 		org	0100h
+; ---------------------------------------------------------------------------
+BOOT		equ	0000h
+BDOS		equ	0005h
+BDOSaddr	equ	0006h
+MumpsFCB	equ	005ch
+FileReg		equ	MumpsFCB+32
 ; ---------------------------------------------------------------------------
 		ld	hl, 0
 		add	hl, sp
