@@ -217,7 +217,7 @@ ReadMFN2:
 		jp	c, ReadMFN3
 		cp	7Bh ; '{'
 		jp	nc, ReadMFN3
-		and	0DFh ; 'ß'
+		and	0DFh ; 'ÃŸ'
 ReadMFN3:
 		ld	(de), a
 		inc	de
@@ -312,7 +312,7 @@ ReadDR:
 		jp	nz, ReadDR1
 		inc	hl
 		ld	a, (hl)
-		and	0DFh ; 'ß'
+		and	0DFh ; 'ÃŸ'
 		cp	41h ; 'A'
 		ret	c
 		cp	51h ; 'Q'
