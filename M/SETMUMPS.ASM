@@ -485,7 +485,7 @@ NoRoom:		db 0Dh,0Ah
 DiskBufLoc:	dw    0			; Location of the disk buffer
 SaveSP:		dw    0			; Save the stack pointer here
 		ds    11
-iBUFFER:	db    1			; Buffer for reading console input
+iBUFFER:	db    5			; Buffer for reading console input
 BUFFER:		ds    40
 		ds    20
 		db    0
