@@ -6,3 +6,5 @@ This code will build through the tniasm Z80 compiler, BAT files provided.
 This project was blessed by Professor Richard "Dick" Walters, original author of the code, and to whom I dedicate all the effort of putting this together.
 
 There may be someone else out there who would also like to have this on their collection, so here it is.
+
+This is dedicated to the memory of Professor Emeritus Richard F. Walters
