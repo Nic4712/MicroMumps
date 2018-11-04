@@ -4,6 +4,7 @@
 ; marcelo.f.dantas@gmail.com
 ; ===========================================================================
 ;
+; ---------------------------------------------------------------------------
 ; enum Chars
 BS               equ 8
 TAB              equ 9
@@ -73,13 +74,13 @@ Page0BUF         equ 80h
 STRNG            equ 1
 PTRLN            equ 2                  ; Size of a Pointer (2)
 NOTFL            equ 2
-TokenTable       equ 3
-MulTable         equ 4
+TokenTable       equ 3                  ; Page number of the Token Table
+MulTable         equ 4                  ; Page number of the Multiplication Table
 DIRTY            equ 4
 INTLN            equ 5                  ; Size of an Integer (5)
 LBLLN            equ 8                  ; Max size of a label
 BRAKE            equ 8
-FLTLN            equ 0Eh                ; Size of a Float (14)
+FLTLN            equ 0Eh                ; Size of a Float/BCD (14)
 Prompt           equ 3Eh                ; >
 ; ---------------------------------------------------------------------------
 ; enum Tokens
@@ -113,7 +114,12 @@ tknCurlR         equ 24h
 tknTAB           equ 25h
 tknCRLF          equ 26h
 tknInvalid       equ 32h
+
+; ---------------------------------------------------------------------------
+; Processor       : z80 []
+; Target assembler: ZMAC 1.3 by Bruce Norskog
 ; ===========================================================================
+
                 org 100h
                 jp      Init
 ; ---------------------------------------------------------------------------
@@ -184,7 +190,7 @@ word_02A4       dw 0
                 db 0
 pVar            dw 0                    ; Points to a var in the symbol table
                 db 0,0,0,0,0,0
-word_02B0       dw 0
+PTR             dw 0
 UnkWD01         dw 0                    ; Set but never read
                 db 0
                 db 0
@@ -363,16 +369,16 @@ byte_04DF       db 0
                 db 0,0,0,0,0,0
 IXT             db 0
 byte_04E7       db 0
-byte_04E8       db 0
+I1X             db 0
 byte_04E9       db 0
 byte_04EA       db 0
 byte_04EB       db 0
 byte_04EC       db 0
 byte_04ED       db 0
-byte_04EE       db 0
-byte_04EF       db 0
+DecPlaces1      db 0
+DecPlaces2      db 0
 Signal1         db 0
-byte_04F1       db 0
+Signal2         db 0
                 db 0
 byte_04F3       db 0
 PrintTgl        db 0
@@ -727,7 +733,7 @@ Main:
                 ld      (DN), a
                 ld      (PF), a
                 ld      (GLB), a
-                ld      (byte_A69C), a
+                ld      (Auto), a
                 ld      (byte_0549), a
                 ld      (byte_A6A4), a
                 ld      (byte_A69F), a
@@ -742,11 +748,11 @@ Main:
                 ld      (word_A049), hl
 MainLoop:                               ; Get line to execute
                 call    Input
-                ld      a, (byte_A69C)
+                ld      a, (Auto)
                 or      a
                 jp      z, MainLoop1
                 ld      a, 1
-                ld      (byte_A69C), a
+                ld      (Auto), a
 MainLoop1:
                 xor     a
                 ld      (byte_04FF), a
@@ -798,11 +804,11 @@ MainLoop6:
                 ld      a, (Token)
                 cp      tknSemicolon    ; Is it ';'?
                 jp      z, MainLoop9
-                ld      a, (byte_A69C)
+                ld      a, (Auto)
                 and     00000100b
                 jp      z, MainLoop7
                 ld      a, 1
-                ld      (byte_A69C), a
+                ld      (Auto), a
 MainLoop7:
                 ld      hl, bmActFL
                 ld      a, 11111110b
@@ -814,7 +820,7 @@ MainLoop7:
                 ld      (word_A652), ix
                 call    sub_8506
                 call    BGetChar2       ; GetChar if A!=0x00 (BIOS call)
-                ld      a, (byte_A69C)
+                ld      a, (Auto)
                 and     00000001b
                 jp      z, MainLoop8
                 call    sub_55D2
@@ -886,10 +892,10 @@ Input4:
                 ld      (word_A636), hl
 Input5:                                 ; Device 0 (console) buffer
                 ld      hl, D0Buffer
-                ld      (word_02B0), hl
+                ld      (PTR), hl
                 dec     hl
                 ld      (Index), hl
-                call    sub_5A30
+                call    CheckLS
                 ld      a, (Result)     ; Holds the result of called function
                 cp      0
                 jp      z, Input13
@@ -1010,10 +1016,10 @@ Input14:                                ; Size of the command line
                 ld      (pStkStart), ix
                 ld      hl, (pStkStart)
                 ld      (Index), hl
-                ld      hl, (word_02B0)
+                ld      hl, (PTR)
                 ld      a, (CmdLineSz)  ; Size of the command line
                 call    PushAnoZ        ; Pushes A long value from (HL) if A not zero
-                ld      (word_02B0), hl
+                ld      (PTR), hl
                 ld      a, (CmdLineSz)  ; Size of the command line
                 ld      (ix+0), a
                 inc     ix
@@ -1157,7 +1163,7 @@ ecFor:
                 ld      (Vptr), ix
                 ld      a, (bmActFL)
                 or      a
-                call    z, sub_494A
+                call    z, ScanBOS      ; Scan for B-O-S
                 ld      a, (Token)
                 cp      tknEqual        ; Is it '='?
                 jp      nz, Error27     ; Missing equal sign
@@ -3532,7 +3538,7 @@ efSelect3:                              ; Expression
                 call    Expr
                 ld      a, (bmActFL)
                 or      a
-                call    z, sub_4A81
+                call    z, AC105
 efSelect4:
                 ld      a, (Token)
                 cp      tknComma        ; Is it ','?
@@ -5766,7 +5772,7 @@ ShowVars:
                 sbc     hl, de
                 jp      z, ShowVarsE
                 ld      hl, (pVar)      ; Points to a var in the symbol table
-                ld      (word_02B0), hl
+                ld      (PTR), hl
                 ld      de, 2
                 add     hl, de
                 ld      a, (hl)
@@ -5786,7 +5792,7 @@ ShowVars1:
                 ld      a, (SubFL)      ; Set if variable has subscripts
                 or      a
                 jp      nz, ShowVars2
-                ld      hl, (word_02B0)
+                ld      hl, (PTR)
                 ld      (pTmp1), hl
                 ld      e, (hl)
                 inc     hl
@@ -5869,7 +5875,7 @@ ShowVars7:
                 jp      z, ShowVars8
                 call    sub_67BD
 ShowVars8:
-                ld      hl, (word_02B0)
+                ld      hl, (PTR)
                 ld      (pVar), hl      ; Points to a var in the symbol table
                 ld      e, (hl)
                 inc     hl
@@ -5887,7 +5893,7 @@ ShowVars8:
                 ld      hl, VarName
                 ld      (pTmp5), hl
                 ld      hl, (pVar)      ; Points to a var in the symbol table
-                ld      (word_02B0), hl
+                ld      (PTR), hl
                 ld      de, 2
                 add     hl, de
                 ld      a, (hl)
@@ -6412,7 +6418,7 @@ loc_3207:
                 jp      c, loc_3273
                 ld      ix, (pTmp2)
                 call    SSChk           ; Check for room on the syntax stack
-                call    sub_8B6A
+                call    NumOP
                 ret
 ; ---------------------------------------------------------------------------
 loc_3241:                               ; bit0:String
@@ -6993,7 +6999,7 @@ bcBreak2:
 bcBreak3:                               ; Outputs a CrLf
                 call    putCrLf
                 ld      a, 1
-                ld      (byte_A69C), a
+                ld      (Auto), a
 bcBreakEnd:
                 ret
 ; End of function bcBreak
@@ -8522,7 +8528,7 @@ loc_4324:
                 call    PushP           ; Pushes pointer in HL onto the stack
                 ld      (pTmp1), ix
                 ld      hl, (pTmp1)
-                ld      bc, 0FFFDh
+                ld      bc, 65533
                 add     hl, bc
                 ld      (pTmp1), hl
                 ld      a, (hl)
@@ -8545,7 +8551,7 @@ loc_433C:
 ; ---------------------------------------------------------------------------
 loc_4358:
                 ld      hl, (pTmp1)
-                ld      bc, 0FFFEh
+                ld      bc, 65534
                 add     hl, bc
                 ld      (pTmp1), hl
                 ld      e, (hl)
@@ -8582,10 +8588,10 @@ loc_4399:
                 dec     hl
                 dec     hl
                 ld      a, (hl)
-                ld      (byte_04E8), a
+                ld      (I1X), a
                 cpl
                 ld      c, a
-                ld      b, 11111111b
+                ld      b, 0FFh
                 inc     bc
                 add     hl, bc
                 ld      (pTmp2), hl
@@ -8606,11 +8612,11 @@ loc_4399:
                 dec     ix
                 ld      a, (ix+0)
                 ld      (I2), a
-                ld      a, (byte_04E8)
+                ld      a, (I1X)
                 ld      (I1), a
                 ld      a, 5
                 ld      (I6), a
-                call    sub_8B6A
+                call    NumOP
                 ld      hl, (Vptr)
                 ld      (pTmp1), hl
                 ld      hl, (word_0502)
@@ -8913,7 +8919,7 @@ sub_463E:
                 ld      a, (byte_04EC)
                 ld      (I2), a
 loc_4688:
-                call    sub_8B6A
+                call    NumOP
                 ld      ix, (word_0502)
                 call    SSChk           ; Check for room on the syntax stack
                 ld      hl, (pTmp1)
@@ -8981,7 +8987,7 @@ sub_46E2:
                 ld      (I2), a
                 ld      a, 6
                 ld      (I6), a
-                call    sub_8B6A
+                call    NumOP
                 dec     ix
                 dec     ix
                 ld      a, (ix+0)
@@ -9000,7 +9006,7 @@ sub_46E2:
                 ld      a, (byte_04EB)
                 ld      (I2), a
 loc_475B:
-                call    sub_8B6A
+                call    NumOP
                 ld      hl, (pTmp5)
                 ld      a, (hl)
                 cp      Minus
@@ -9029,7 +9035,7 @@ loc_4785:
                 ld      (I2), a
                 ld      a, 5
                 ld      (I6), a
-                call    sub_8B6A
+                call    NumOP
                 ld      hl, (Vptr)
                 ld      (pTmp1), hl
                 ld      hl, (word_0502)
@@ -9254,7 +9260,8 @@ loc_4939:
                 ret
 ; End of function sub_492D
 ; =============== S U B R O U T I N E =======================================
-sub_494A:
+; Scan for B-O-S
+ScanBOS:
                 call    SSChk           ; Check for room on the syntax stack
                 ld      hl, ForSW
                 inc     (hl)
@@ -9264,49 +9271,49 @@ sub_494A:
                 ld      (tmpChar2), a
                 xor     a
                 ld      (I1), a
-loc_4961:
+ScanBOS1:
                 ld      hl, (pTmp1)
                 ld      a, (hl)
                 cp      Blank           ; Space
-                jp      z, loc_4988
+                jp      z, ScanBOS3
                 ld      a, (hl)
                 cp      CR
-                jp      z, loc_4997
+                jp      z, ScanBOS4
                 ld      a, (hl)
                 cp      Quotes          ; "
-                jp      nz, loc_497E
+                jp      nz, ScanBOS2
                 ld      a, (I1)
                 xor     00000001b
                 ld      (I1), a
-loc_497E:
+ScanBOS2:
                 ld      hl, (pTmp1)
                 inc     hl
                 ld      (pTmp1), hl
-                jp      loc_4961
+                jp      ScanBOS1
 ; ---------------------------------------------------------------------------
-loc_4988:
+ScanBOS3:
                 ld      a, (I1)
                 cp      1
-                jp      z, loc_497E
+                jp      z, ScanBOS2
                 ld      hl, (pTmp1)
                 inc     hl
                 ld      (pTmp1), hl
-loc_4997:
+ScanBOS4:
                 ld      a, (Mode)
                 cp      0
-                jp      nz, loc_49AC
+                jp      nz, ScanBOS5
                 ld      de, (pStkStart)
                 ld      hl, (pTmp1)
                 or      a
                 sbc     hl, de
                 ld      (pTmp1), hl
-loc_49AC:
+ScanBOS5:
                 ld      hl, (pTmp1)
                 call    PushP           ; Pushes pointer in HL onto the stack
                 ld      a, (tmpChar2)
                 ld      (Token), a
                 ret
-; End of function sub_494A
+; End of function ScanBOS
 ; =============== S U B R O U T I N E =======================================
 ; Push global on stack
 PushGlobal:
@@ -9408,7 +9415,7 @@ AC104:
                 ret
 ; End of function AC104
 ; =============== S U B R O U T I N E =======================================
-sub_4A81:
+AC105:
                 ld      a, 1
                 ld      (IOTemp2), a
                 ld      hl, bmActFL
@@ -9416,7 +9423,7 @@ sub_4A81:
                 or      00000010b
                 ld      (hl), a
                 ret
-; End of function sub_4A81
+; End of function AC105
 ; =============== S U B R O U T I N E =======================================
 sub_4A8E:
                 call    SSChk           ; Check for room on the syntax stack
@@ -9685,14 +9692,14 @@ AC118:
                 dec     ix
                 ld      a, (ix+0)
                 ld      (CmdLineSz), a  ; Size of the command line
-                ld      (word_02B0), ix
-                ld      hl, (word_02B0)
+                ld      (PTR), ix
+                ld      hl, (PTR)
                 cpl
                 ld      c, a
                 ld      b, 255
                 inc     bc
                 add     hl, bc
-                ld      (word_02B0), hl
+                ld      (PTR), hl
                 ld      (pTmp5), hl
                 call    LineInsert      ; Insert line ar PrgPT
                 ld      ix, (pTmp5)
@@ -9768,14 +9775,14 @@ sub_4D30:
                 jp      z, loc_4D66
                 cp      32h             ; '2'
                 jp      nz, Error30     ; Unimplemented operation
-                ld      hl, byte_A69C
+                ld      hl, Auto
                 ld      a, (hl)
                 or      00000010b
                 ld      (hl), a
                 jp      locret_4D6D
 ; ---------------------------------------------------------------------------
 loc_4D66:
-                ld      hl, byte_A69C
+                ld      hl, Auto
                 ld      a, (hl)
                 or      00000100b
                 ld      (hl), a
@@ -10899,7 +10906,7 @@ sub_55D2:
                 call    putErrLine
 loc_565E:
                 xor     a
-                ld      (byte_A69C), a
+                ld      (Auto), a
                 ret
 ; End of function sub_55D2
 ; =============== S U B R O U T I N E =======================================
@@ -11267,21 +11274,21 @@ MkStr:
                 dec     ix
                 ld      a, (ix+0)
                 ld      (StrLen), a     ; Length of the current string (plus 1)
-                ld      (word_02B0), ix
-                ld      hl, (word_02B0)
+                ld      (PTR), ix
+                ld      hl, (PTR)
                 cpl
                 ld      c, a
                 ld      b, 255
                 inc     bc
                 add     hl, bc
-                ld      (word_02B0), hl
+                ld      (PTR), hl
                 xor     a
                 ld      (I4), a
                 ld      hl, (Index)
                 ld      (pIndex), hl
                 ld      a, 1
                 ld      (byte_A69F), a
-                ld      hl, (word_02B0)
+                ld      hl, (PTR)
                 dec     hl
                 ld      (Index), hl
 loc_5969:                               ; Length of the current string (plus 1)
@@ -11352,7 +11359,7 @@ loc_59BA:                               ; bit0:String
                 ld      hl, I1
                 inc     (hl)
 loc_59F1:
-                ld      hl, (word_02B0)
+                ld      hl, (PTR)
                 ex      de, hl
                 ld      hl, (pTmp1)
                 ld      a, (I1)
@@ -11360,7 +11367,7 @@ loc_59F1:
                 jp      loc_5A13
 ; ---------------------------------------------------------------------------
 loc_5A01:
-                ld      ix, (word_02B0)
+                ld      ix, (PTR)
                 call    SSChk           ; Check for room on the syntax stack
                 ld      (ix+0), 30h     ; '0'
                 inc     ix
@@ -11381,20 +11388,20 @@ loc_5A13:
                 ret
 ; End of function MkStr
 ; =============== S U B R O U T I N E =======================================
-sub_5A30:
+CheckLS:
                 ld      a, 1
                 ld      (Result), a     ; Holds the result of called function
                 ld      a, (CmdLineSz)  ; Size of the command line
                 ld      (tmpChar2), a
                 xor     a
                 ld      (NameLen), a    ; Length of the current variable name
-                ld      hl, (word_02B0)
+                ld      hl, (PTR)
                 ld      (pIndex), hl
-loc_5A45:
+CheckLS1:
                 ld      hl, (pIndex)
                 ld      a, (hl)
                 cp      9
-                jp      z, locret_5A66
+                jp      z, CheckLS2
                 inc     hl
                 ld      (pIndex), hl
                 ld      hl, NameLen     ; Length of the current variable name
@@ -11403,12 +11410,12 @@ loc_5A45:
                 dec     (hl)
                 ld      a, (tmpChar2)
                 or      a
-                jp      nz, loc_5A45
+                jp      nz, CheckLS1
                 ld      a, 0
                 ld      (Result), a     ; Holds the result of called function
-locret_5A66:
+CheckLS2:
                 ret
-; End of function sub_5A30
+; End of function CheckLS
 ; =============== S U B R O U T I N E =======================================
 sub_5A67:
                 call    SSChk           ; Check for room on the syntax stack
@@ -11834,7 +11841,7 @@ LineInsert:
                 or      a
                 jp      z, Error00      ; Missing linestart character
                 call    sub_5A7B
-                ld      hl, (word_02B0)
+                ld      hl, (PTR)
                 ld      (pTmp4), hl
                 ld      (pIndex), hl
                 xor     a
@@ -11864,7 +11871,7 @@ LineInsert2:
                 ld      (byte_A69F), a
                 ld      hl, (Index)
                 ld      (pIndex), hl
-                ld      hl, (word_02B0)
+                ld      hl, (PTR)
                 dec     hl
                 ld      (Index), hl
                 call    GToken          ; Loads to (Token) the token code of char (++pStkPos)
@@ -11909,8 +11916,8 @@ LineInsert5:                            ; Pointer to the end of the loaded routi
                 ld      (pEndOfRtn), hl ; Pointer to the end of the loaded routine
                 ld      hl, (pCurRtnLine) ; Pointer to current routine line
                 dec     hl
-                ld      (word_02B0), hl
-                ld      bc, (word_02B0)
+                ld      (PTR), hl
+                ld      bc, (PTR)
                 ld      hl, (pIndex)
                 ex      de, hl
                 ld      hl, (pTmp2)
@@ -16443,7 +16450,7 @@ loc_84F0:
 ; =============== S U B R O U T I N E =======================================
 sub_8506:
                 ld      de, Commands
-                jr      GetFunName5
+                jr      ScanTable
 ; End of function sub_8506
 ; =============== S U B R O U T I N E =======================================
 GetSVName:
@@ -16458,7 +16465,7 @@ GetSVName:
 GetSVName1:
                 ld      de, ssvPiece
                 call    sub_85E9
-                jr      nc, GetFunName6
+                jr      nc, ScanTable1
                 jp      Error05         ; Illegal command name
 ; End of function GetSVName
 ; =============== S U B R O U T I N E =======================================
@@ -16477,7 +16484,7 @@ GetFunName:
 ; ---------------------------------------------------------------------------
 GetFunName1:
                 ld      de, Functions
-                jr      GetFunName5
+                jr      ScanTable
 ; ---------------------------------------------------------------------------
 GetFunName2:
                 dec     b
@@ -16491,15 +16498,15 @@ GetFunName3:
                 ld      de, sfzCheck
 GetFunName4:
                 call    sub_85E9
-                jr      nc, GetFunName6
+                jr      nc, ScanTable1
                 jp      Error05         ; Illegal command name
 ; ---------------------------------------------------------------------------
-GetFunName5:
+ScanTable:
                 ld      hl, (Index)
                 ld      a, (hl)
                 and     11011111b       ; Make uppercase
                 cp      5Ah             ; 'Z'
-                jr      z, GetFunName9
+                jr      z, ScanTable4
                 sub     41h             ; 'A'
                 jp      c, Error05      ; Illegal command name
                 cp      19h
@@ -16513,13 +16520,13 @@ GetFunName5:
                 inc     de
                 ld      a, (de)
                 cp      41h             ; 'A'
-                jr      nc, GetFunName8
-GetFunName6:
+                jr      nc, ScanTable3
+ScanTable1:
                 ld      a, (de)
                 cp      LeftP
-                jr      z, GetFunName7
+                jr      z, ScanTable2
                 dec     de
-GetFunName7:
+ScanTable2:
                 ex      de, hl
                 ld      (Index), hl
                 call    GToken          ; Loads to (Token) the token code of char (++pStkPos)
@@ -16532,7 +16539,7 @@ GetFunName7:
                 ld      (Locks), a
                 jp      (hl)
 ; ---------------------------------------------------------------------------
-GetFunName8:
+ScanTable3:
                 inc     hl
                 inc     hl
                 ld      a, (hl)
@@ -16542,16 +16549,16 @@ GetFunName8:
                 or      h
                 jp      z, Error05      ; Illegal command name
                 call    sub_85CB
-                jr      nc, GetFunName6
+                jr      nc, ScanTable1
                 jp      Error05         ; Illegal command name
 ; ---------------------------------------------------------------------------
-GetFunName9:
+ScanTable4:
                 call    sub_85AF
                 dec     b
                 inc     hl
                 ld      de, sczSave
                 call    sub_85E9
-                jr      nc, GetFunName6
+                jr      nc, ScanTable1
                 jp      Error05         ; Illegal command name
 ; End of function GetFunName
 ; =============== S U B R O U T I N E =======================================
@@ -16964,7 +16971,7 @@ BGetChar2:
                 ret     z
                 ld      l, 6            ; Console input
                 call    BIOScall
-                cp      3
+                cp      3               ; ^C
                 jp      z, PrintErr17
                 cp      16              ; ^P
                 jr      nz, BGetChar3
@@ -17212,7 +17219,7 @@ PrintErr17:
                 xor     a
                 ld      (Case), a
                 ld      (Mode), a
-                ld      (byte_A69C), a
+                ld      (Auto), a
                 call    bcBreak         ; Body of BREAK command
                 call    sub_55D2
                 call    sub_8B17
@@ -17222,7 +17229,7 @@ PrintErr18:
                 ld      sp, (pPlus1000)
                 xor     a
                 ld      (BreakFL), a    ; 1=On Break
-                ld      (byte_A69C), a
+                ld      (Auto), a
 PrintErr19:                             ; Outputs a CrLf
                 call    putCrLf
                 xor     a
@@ -17341,203 +17348,203 @@ SCmpB2:
                 ret
 ; End of function SCmpB
 ; =============== S U B R O U T I N E =======================================
-sub_8B6A:
+NumOP:
                 ld      a, (I6)
                 push    af
                 ld      a, (I1)
                 ld      c, a
-                ld      b, FLTLN        ; Size of a Float (14)
+                ld      b, FLTLN        ; Size of a Float/BCD (14)
                 ld      hl, (pTmp2)
                 ld      de, lbcdTemp1
                 call    BCDPack         ; Packs a C long string in (HL) into BCD form
                 ld      (Signal1), a
                 ld      a, (Count)
-                ld      (byte_04EE), a
+                ld      (DecPlaces1), a
                 ld      a, (I2)
                 ld      c, a
                 ld      hl, (pTmp3)
                 ld      de, lbcdTemp2
                 call    BCDPack         ; Packs a C long string in (HL) into BCD form
-                ld      (byte_04F1), a
+                ld      (Signal2), a
                 ld      a, (Count)
-                ld      (byte_04EF), a
-loc_8B9C:
+                ld      (DecPlaces2), a
+NumOP2:
                 ld      c, a
-                ld      a, (byte_04EE)
+                ld      a, (DecPlaces1)
                 ld      b, a
                 pop     af
-                cp      0Dh
-                jr      nc, loc_8BAF
+                cp      13
+                jr      nc, NumOP3
                 cp      7
-                jp      nc, loc_8C40
+                jp      nc, NumOP13
                 cp      5
-                jr      z, loc_8BB7
-loc_8BAF:
-                ld      a, (byte_04F1)
+                jr      z, NumOP4
+NumOP3:                                 ; Change sign of OP2
+                ld      a, (Signal2)
                 xor     00000001b
-                ld      (byte_04F1), a
-loc_8BB7:
+                ld      (Signal2), a
+NumOP4:
                 ld      a, b
                 sub     c
-                jr      z, loc_8BFF
-                jr      c, loc_8BDA
+                jr      z, NumOP10
+                jr      c, NumOP5
                 ld      c, b
                 ld      b, a
                 ld      hl, I2
-                ld      a, 1Ch
+                ld      a, FLTLN*2
                 sub     (hl)
                 cp      b
                 ld      hl, lbcdTemp2
-                jr      nc, loc_8BF6
+                jr      nc, NumOP8
                 ld      de, lbcdTemp1
                 ex      de, hl
                 call    CopyCDEHL       ; Copy C bytes from (DE) to (HL)
-                ld      a, (byte_04EF)
-                ld      (byte_04EE), a
-                jr      loc_8BE8
+                ld      a, (DecPlaces2)
+                ld      (DecPlaces1), a
+                jr      NumOP6
 ; ---------------------------------------------------------------------------
-loc_8BDA:
+NumOP5:
                 cpl
                 inc     a
                 ld      b, a
                 ld      hl, I1
-                ld      a, 1Ch
+                ld      a, FLTLN*2
                 sub     (hl)
                 cp      b
-                jr      c, loc_8BE8
-                jr      loc_8BF3
+                jr      c, NumOP6
+                jr      NumOP7
 ; ---------------------------------------------------------------------------
-loc_8BE8:
+NumOP6:
                 ld      a, (I6)
-                cp      0Dh
-                jp      nc, loc_8D52
-                jp      loc_8D86
+                cp      13
+                jp      nc, NumOP25
+                jp      NumOP32
 ; ---------------------------------------------------------------------------
-loc_8BF3:
+NumOP7:
                 ld      hl, lbcdTemp1
-loc_8BF6:
+NumOP8:
                 push    bc
-                ld      c, FLTLN        ; Size of a Float (14)
-loc_8BF9:
-                call    sub_9014
-                djnz    loc_8BF9
+                ld      c, FLTLN        ; Size of a Float/BCD (14)
+NumOP9:                                 ; Multiply a BCD by 10
+                call    Times10
+                djnz    NumOP9
                 pop     bc
-loc_8BFF:
+NumOP10:
                 ld      a, c
-                ld      (byte_04EE), a
+                ld      (DecPlaces1), a
                 ld      hl, Signal1
-                ld      a, (byte_04F1)
+                ld      a, (Signal2)
                 cp      (hl)
                 ld      hl, lbcdTemp1
                 ld      de, lbcdTemp2
-                ld      c, FLTLN        ; Size of a Float (14)
-                jr      nz, loc_8C22
+                ld      c, FLTLN        ; Size of a Float/BCD (14)
+                jr      nz, NumOP11
                 ld      a, (I6)
-                cp      0Dh
-                jp      nc, loc_8D52
+                cp      13
+                jp      nc, NumOP25
                 call    AbcdDEHL        ; Adds two C bytes long BCDs in (DE) and (HL)
                                         ; result goes in (HL)
-                jp      loc_8D86
+                jp      NumOP32
 ; ---------------------------------------------------------------------------
-loc_8C22:                               ; Size of a Float (14)
+NumOP11:                                ; Size of a Float/BCD (14)
                 ld      b, FLTLN
                 call    SCmp            ; Compares two strings
-                jr      c, loc_8C30
+                jr      c, NumOP12
                 ex      de, hl
-                ld      a, (byte_04F1)
+                ld      a, (Signal2)
                 ld      (Signal1), a
-loc_8C30:
+NumOP12:
                 push    af
                 ld      a, (I6)
-                cp      0Dh
-                jp      nc, loc_8D4C
+                cp      13
+                jp      nc, NumOP24
                 pop     af
                 call    SbcdDEHL        ; Subtracts two C bytes long BCDs in (DE) and (HL)
                                         ; result goes in (HL)
-                jp      loc_8D86
+                jp      NumOP32
 ; ---------------------------------------------------------------------------
-loc_8C40:
+NumOP13:
                 cp      9
-                jr      z, loc_8C6F
-                cp      0Bh
-                jp      nc, loc_8D1C
+                jr      z, NumOP14
+                cp      11
+                jp      nc, NumOP22
                 push    af
                 ld      hl, Signal1
-                ld      a, (byte_04F1)
+                ld      a, (Signal2)
                 xor     (hl)
                 ld      (Signal1), a
                 pop     af
                 cp      7
-                jr      nz, loc_8C6F
+                jr      nz, NumOP14
                 ld      a, b
                 add     a, c
-                ld      (byte_04EE), a
+                ld      (DecPlaces1), a
                 ld      hl, lbcdTemp1
                 ld      de, lbcdTemp2
-                ld      c, FLTLN        ; Size of a Float (14)
+                ld      c, FLTLN        ; Size of a Float/BCD (14)
                 call    MbcdDEHL        ; Multiplies two C bytes long BCD in (DE) and (HL)
                                         ; result goes in ibcdResult
                 ld      hl, ibcdResult  ; Operation result
-                jp      loc_8D86
+                jp      NumOP32
 ; ---------------------------------------------------------------------------
-loc_8C6F:
+NumOP14:
                 push    af
                 cp      9
-                jr      nz, loc_8C81
+                jr      nz, NumOP15
                 ld      hl, byte_9F15
                 ld      de, lbcdTemp1
                 push    bc
-                ld      c, FLTLN        ; Size of a Float (14)
+                ld      c, FLTLN        ; Size of a Float/BCD (14)
                 call    CopyCDEHL       ; Copy C bytes from (DE) to (HL)
                 pop     bc
-loc_8C81:
+NumOP15:
                 ld      a, b
                 sub     c
-                jr      c, loc_8C88
+                jr      c, NumOP16
                 ld      b, a
-                jr      loc_8C95
+                jr      NumOP18
 ; ---------------------------------------------------------------------------
-loc_8C88:
+NumOP16:
                 ld      hl, lbcdTemp1
-                ld      c, FLTLN        ; Size of a Float (14)
+                ld      c, FLTLN        ; Size of a Float/BCD (14)
                 cpl
                 inc     a
                 ld      b, a
-loc_8C90:
-                call    sub_9014
-                djnz    loc_8C90
-loc_8C95:
+NumOP17:                                ; Multiply a BCD by 10
+                call    Times10
+                djnz    NumOP17
+NumOP18:
                 pop     af
                 cp      8
-                jr      nz, loc_8CAF
+                jr      nz, NumOP19
                 ld      hl, lbcdTemp1
                 ld      de, lbcdTemp2
-                ld      c, FLTLN        ; Size of a Float (14)
-                call    sub_9040
+                ld      c, FLTLN        ; Size of a Float/BCD (14)
+                call    Divide          ; BCD divide with a fractional remainder
                 ld      hl, byte_9F23
                 ld      a, b
-                ld      (byte_04EE), a
-                jp      loc_8D86
+                ld      (DecPlaces1), a
+                jp      NumOP32
 ; ---------------------------------------------------------------------------
-loc_8CAF:
+NumOP19:
                 cp      9
-                jr      nz, loc_8CFE
+                jr      nz, NumOP21
                 ld      hl, lbcdTemp1
                 ld      de, lbcdTemp2
-                ld      c, FLTLN        ; Size of a Float (14)
-                call    sub_9040
+                ld      c, FLTLN        ; Size of a Float/BCD (14)
+                call    Divide          ; BCD divide with a fractional remainder
                 ld      de, byte_9F23
                 call    IDbcdDEHL       ; Integer divide a C bytes long BCD in (DE) and (HL)
                 ld      a, b
                 or      a
-                jr      z, loc_8CD7
+                jr      z, NumOP20
                 ld      a, (Signal1)
                 ld      hl, 1265
                 cp      (hl)
                 ld      hl, lbcdTemp1
-                jr      z, loc_8CD7
+                jr      z, NumOP20
                 call    IbcdHL          ; Increments by 1 the C bytes long BCD in (HL)
-loc_8CD7:
+NumOP20:
                 ld      de, lbcdTemp2
                 call    MbcdDEHL        ; Multiplies two C bytes long BCD in (DE) and (HL)
                                         ; result goes in ibcdResult
@@ -17548,85 +17555,85 @@ loc_8CD7:
                 ld      de, ibcdResult  ; Operation result
                 call    CopyCDEHL       ; Copy C bytes from (DE) to (HL)
                 ld      a, (Signal1)
-                ld      (byte_04F1), a
+                ld      (Signal2), a
                 ld      a, 2
                 push    af
-                ld      a, (byte_04EF)
-                jp      loc_8B9C
+                ld      a, (DecPlaces2)
+                jp      NumOP2
 ; ---------------------------------------------------------------------------
-loc_8CFE:
+NumOP21:
                 cp      10
-                jr      nz, loc_8D1C
+                jr      nz, NumOP22
                 ld      hl, lbcdTemp1
                 ld      de, lbcdTemp2
-                ld      c, FLTLN        ; Size of a Float (14)
-                call    sub_8FB4
+                ld      c, FLTLN        ; Size of a Float/BCD (14)
+                call    DivideB         ; BCD divide
                 ld      hl, lbcdTemp1
                 ld      de, ibcdResult  ; Operation result
                 call    IDbcdDEHL       ; Integer divide a C bytes long BCD in (DE) and (HL)
                 xor     a
-                ld      (byte_04EE), a
-                jr      loc_8D86
+                ld      (DecPlaces1), a
+                jr      NumOP32
 ; ---------------------------------------------------------------------------
-loc_8D1C:
+NumOP22:
                 cp      11
-                jr      nz, loc_8D34
+                jr      nz, NumOP23
                 ld      hl, lbcdTemp1
-                ld      c, FLTLN        ; Size of a Float (14)
+                ld      c, FLTLN        ; Size of a Float/BCD (14)
                 call    lZtest          ; Tests a C bytes long BCD in (HL) for zero
-                jr      z, loc_8D64
+                jr      z, NumOP27
                 ld      hl, lbcdTemp2
                 call    lZtest          ; Tests a C bytes long BCD in (HL) for zero
-                jr      z, loc_8D64
-                jr      loc_8D6F
+                jr      z, NumOP27
+                jr      NumOP29
 ; ---------------------------------------------------------------------------
-loc_8D34:
+NumOP23:
                 cp      12
-                jr      nz, loc_8D52
+                jr      nz, NumOP25
                 ld      hl, lbcdTemp1
-                ld      c, FLTLN        ; Size of a Float (14)
+                ld      c, FLTLN        ; Size of a Float/BCD (14)
                 call    lZtest          ; Tests a C bytes long BCD in (HL) for zero
-                jr      nz, loc_8D6F
+                jr      nz, NumOP29
                 ld      hl, lbcdTemp2
                 call    lZtest          ; Tests a C bytes long BCD in (HL) for zero
-                jr      z, loc_8D64
-                jr      loc_8D6F
+                jr      z, NumOP27
+                jr      NumOP29
 ; ---------------------------------------------------------------------------
-loc_8D4C:
+NumOP24:
                 pop     af
-                jr      z, loc_8D64
+                jr      z, NumOP27
                 ld      a, (I6)
-loc_8D52:
+NumOP25:
                 cp      13
-                jr      nz, loc_8D5E
+                jr      nz, NumOP26
                 ld      a, (Signal1)
                 or      a
-                jr      z, loc_8D64
-                jr      loc_8D6F
+                jr      z, NumOP27
+                jr      NumOP29
 ; ---------------------------------------------------------------------------
-loc_8D5E:
+NumOP26:
                 ld      a, (Signal1)
                 or      a
-                jr      z, loc_8D6F
-loc_8D64:                               ; bit0:String
+                jr      z, NumOP29
+NumOP27:                                ; bit0:String
                 ld      a, (bmFlag1)    ; bit1:Not
                                         ; bit2:Dirty
                                         ; bit4:Break
                 and     NOTFL
-                jr      nz, loc_8D76
-loc_8D6B:                               ; '0'
+                jr      nz, NumOP30
+NumOP28:                                ; '0'
                 ld      a, 30h
-                jr      loc_8D78
+                jr      NumOP31
 ; ---------------------------------------------------------------------------
-loc_8D6F:                               ; bit0:String
+NumOP29:                                ; bit0:String
                 ld      a, (bmFlag1)    ; bit1:Not
                                         ; bit2:Dirty
                                         ; bit4:Break
                 and     NOTFL
-                jr      nz, loc_8D6B
-loc_8D76:                               ; '1'
+                jr      nz, NumOP28
+NumOP30:                                ; '1'
                 ld      a, 31h
-loc_8D78:
+NumOP31:
                 call    SPush
                 ld      a, 1
                 call    SPush
@@ -17634,12 +17641,12 @@ loc_8D78:
                 call    SPush
                 ret
 ; ---------------------------------------------------------------------------
-loc_8D86:
+NumOP32:
                 ld      c, 9
-                call    sub_908D
+                call    Round           ; Round BCD in HL to MAXDG
                 call    BCDPush         ; Push BCD into the stack
                 ret
-; End of function sub_8B6A
+; End of function NumOP
 ;
 ; BCDPack
 ;       ON ENTRY:
@@ -18159,7 +18166,8 @@ sub_8F9A:
                 ret
 ; End of function sub_8F9A
 ; =============== S U B R O U T I N E =======================================
-sub_8FB4:
+; BCD divide
+DivideB:
                 push    bc
                 push    hl
                 push    de
@@ -18173,22 +18181,22 @@ sub_8FB4:
                 ld      hl, ibcdResult  ; Operation result
                 call    zeroCHL         ; Fills C bytes in (HL) with 0x00
                 ld      b, c
-loc_8FCF:
+DivideB2:
                 ld      de, vW
                 ld      hl, (word_0504)
                 ex      de, hl
                 call    SCmp            ; Compares two strings
-                jr      c, loc_8FE1
+                jr      c, DivideB3
                 call    Mbcd2           ; Multiplies C bytes long BCD in (HL) by 2
-                jp      loc_8FCF
+                jp      DivideB2
 ; ---------------------------------------------------------------------------
-loc_8FE1:
+DivideB3:
                 pop     de
                 push    de
                 ld      hl, vW
                 call    SCmp            ; Compares two strings
-                jr      z, loc_9010
-                jr      nc, loc_9010
+                jr      z, DivideB5
+                jr      nc, DivideB5
                 ld      hl, ibcdResult  ; Operation result
                 call    Mbcd2           ; Multiplies C bytes long BCD in (HL) by 2
                 ld      hl, vW
@@ -18196,32 +18204,33 @@ loc_8FE1:
                 ex      de, hl
                 ld      hl, (word_0504)
                 call    SCmp            ; Compares two strings
-                jr      z, loc_9004
-                jr      nc, loc_8FE1
-loc_9004:                               ; Subtracts two C bytes long BCDs in (DE) and (HL)
+                jr      z, DivideB4
+                jr      nc, DivideB3
+DivideB4:                               ; Subtracts two C bytes long BCDs in (DE) and (HL)
                 call    SbcdDEHL        ; result goes in (HL)
                 ld      hl, ibcdResult  ; Operation result
                 call    IbcdHL          ; Increments by 1 the C bytes long BCD in (HL)
-                jp      loc_8FE1
+                jp      DivideB3
 ; ---------------------------------------------------------------------------
-loc_9010:
+DivideB5:
                 pop     de
                 pop     hl
                 pop     bc
                 ret
-; End of function sub_8FB4
+; End of function DivideB
 ; =============== S U B R O U T I N E =======================================
-sub_9014:
+; Multiply a BCD by 10
+Times10:
                 push    af
                 push    bc
                 push    de
                 call    pHLtoLbcd       ; Points HL to the last byte of C long BCD
                 ld      b, c
                 xor     a
-loc_901C:
+Times102:
                 rld
                 dec     hl
-                djnz    loc_901C
+                djnz    Times102
                 or      a
                 jp      nz, Error02     ; Arithmetic overflow
                 inc     hl
@@ -18229,7 +18238,7 @@ loc_901C:
                 pop     bc
                 pop     af
                 ret
-; End of function sub_9014
+; End of function Times10
 ; =============== S U B R O U T I N E =======================================
 ; Tests a bcd number for zero
 ZTest:
@@ -18256,38 +18265,39 @@ ZTest3:
                 ret
 ; End of function ZTest
 ; =============== S U B R O U T I N E =======================================
-sub_9040:
+; BCD divide with a fractional remainder
+Divide:
                 push    hl
                 push    de
                 push    hl
                 ld      hl, byte_9F23
                 call    zeroCHL         ; Fills C bytes in (HL) with 0x00
                 pop     hl
-loc_904A:
+Divide2:
                 pop     de
                 push    de
-                call    sub_8FB4
+                call    DivideB         ; BCD divide
                 push    hl
                 ld      hl, byte_9F23
-                call    sub_9014
+                call    Times10         ; Multiply a BCD by 10
                 ld      de, ibcdResult  ; Operation result
                 call    AbcdDEHL        ; Adds two C bytes long BCDs in (DE) and (HL)
                                         ; result goes in (HL)
                 call    ZTest           ; Tests a bcd number for zero
                 pop     hl
-                cp      0Ah
-                jr      nc, loc_9070
+                cp      10
+                jr      nc, Divide3
                 call    lZtest          ; Tests a C bytes long BCD in (HL) for zero
-                jr      z, loc_9070
-                call    sub_9014
+                jr      z, Divide3
+                call    Times10         ; Multiply a BCD by 10
                 inc     b
-                jp      loc_904A
+                jp      Divide2
 ; ---------------------------------------------------------------------------
-loc_9070:
+Divide3:
                 pop     de
                 pop     hl
                 ret
-; End of function sub_9040
+; End of function Divide
 ; =============== S U B R O U T I N E =======================================
 ; Fills C bytes in (HL) with 0x00
 zeroCHL:
@@ -18320,39 +18330,40 @@ CopyCDEHL:
                 ret
 ; End of function CopyCDEHL
 ; =============== S U B R O U T I N E =======================================
-sub_908D:
+; Round BCD in HL to MAXDG
+Round:
                 push    hl
-                ld      b, 14
-loc_9090:
+                ld      b, FLTLN        ; Size of a Float/BCD (14)
+Round2:
                 ld      a, (hl)
                 or      a
-                jr      nz, loc_909E
+                jr      nz, Round3
                 inc     hl
-                djnz    loc_9090
+                djnz    Round2
                 ld      bc, 0
                 pop     hl
-                jp      loc_917E
+                jp      Round24
 ; ---------------------------------------------------------------------------
-loc_909E:
+Round3:
                 ld      a, b
                 add     a, a
                 ld      b, a
                 ld      a, (hl)
                 and     11110000b
-                jr      nz, loc_90A7
+                jr      nz, Round4
                 dec     b
-loc_90A7:
+Round4:
                 ld      a, (DollarJ)
                 or      a
-                jr      z, loc_90CE
-                ld      a, (byte_04EE)
+                jr      z, Round5
+                ld      a, (DecPlaces1)
                 cp      b
-                jr      c, loc_90CE
+                jr      c, Round5
                 pop     hl
                 push    hl
                 push    bc
                 ld      c, a
-                ld      a, 1Ch
+                ld      a, FLTLN*2
                 sub     c
                 rra
                 push    af
@@ -18361,150 +18372,150 @@ loc_90A7:
                 add     hl, bc
                 pop     af
                 pop     bc
-                ld      a, (byte_04EE)
+                ld      a, (DecPlaces1)
                 ld      b, a
                 ld      d, 0
-                jr      c, loc_90D6
+                jr      c, Round6
                 ld      d, 1
-                jr      loc_90E3
+                jr      Round7
 ; ---------------------------------------------------------------------------
-loc_90CE:
+Round5:
                 ld      a, (hl)
                 and     11110000b
                 ld      a, b
                 ld      d, 0
-                jr      nz, loc_90E3
-loc_90D6:
+                jr      nz, Round7
+Round6:
                 ld      a, c
                 or      a
                 ld      a, d
                 push    bc
-                jr      z, loc_90F9
+                jr      z, Round9
                 pop     bc
                 dec     c
                 ld      a, b
                 dec     a
                 ld      d, 1
                 inc     hl
-loc_90E3:
+Round7:
                 push    bc
                 sub     c
                 ld      b, a
-                jr      c, loc_9131
-                jr      z, loc_9131
+                jr      c, Round17
+                jr      z, Round17
                 ld      a, c
                 or      a
                 ld      a, d
-                jr      z, loc_90F9
-loc_90EF:
+                jr      z, Round9
+Round8:
                 xor     a
                 dec     c
-                jr      z, loc_90F9
+                jr      z, Round9
                 ld      a, 1
                 inc     hl
                 dec     c
-                jr      nz, loc_90EF
-loc_90F9:
+                jr      nz, Round8
+Round9:
                 push    hl
                 push    af
                 or      a
-                jr      z, loc_9102
-                ld      d, 50h          ; 'P'
-                jr      loc_9104
+                jr      z, Round10
+                ld      d, 80
+                jr      Round11
 ; ---------------------------------------------------------------------------
-loc_9102:
+Round10:
                 ld      d, 5
-loc_9104:
+Round11:
                 ld      a, (hl)
                 add     a, d
                 daa
                 ld      (hl), a
-                jr      nc, loc_9113
-loc_910A:
+                jr      nc, Round13
+Round12:
                 dec     hl
                 ld      a, (hl)
                 adc     a, 0
                 daa
                 ld      (hl), a
-                jp      c, loc_910A
-loc_9113:
+                jp      c, Round12
+Round13:
                 pop     af
                 pop     hl
                 or      a
-                jr      nz, loc_911E
+                jr      nz, Round14
                 ld      a, (hl)
                 and     11110000b
                 ld      (hl), a
                 inc     hl
                 dec     b
-loc_911E:
+Round14:
                 srl     b
-                jr      z, loc_9127
+                jr      z, Round16
                 xor     a
-loc_9123:
+Round15:
                 ld      (hl), a
                 inc     hl
-                djnz    loc_9123
-loc_9127:
+                djnz    Round15
+Round16:
                 pop     bc
                 pop     hl
-                ld      c, 0Eh
+                ld      c, FLTLN        ; Size of a Float/BCD (14)
                 call    ZTest           ; Tests a bcd number for zero
                 ld      b, a
-                jr      loc_9133
+                jr      Round18
 ; ---------------------------------------------------------------------------
-loc_9131:
+Round17:
                 pop     bc
                 pop     hl
-loc_9133:
-                ld      de, 0Eh
+Round18:                                ; Size of a Float/BCD (14)
+                ld      de, FLTLN
                 add     hl, de
                 dec     hl
                 ld      d, 1
-                ld      a, (byte_04EE)
+                ld      a, (DecPlaces1)
                 ld      c, a
                 or      a
-                jr      z, loc_9163
+                jr      z, Round21
                 ld      a, b
                 or      a
-                jr      nz, loc_9148
+                jr      nz, Round19
                 ld      c, b
-                jr      loc_9163
+                jr      Round21
 ; ---------------------------------------------------------------------------
-loc_9148:
+Round19:
                 ld      a, (hl)
                 and     00001111b
-                jr      nz, loc_9163
+                jr      nz, Round21
                 dec     b
                 dec     c
                 ld      d, 0
-                jr      z, loc_9163
+                jr      z, Round21
                 ld      a, (hl)
                 and     11110000b
-                jr      nz, loc_9163
+                jr      nz, Round21
                 dec     b
                 dec     c
                 ld      d, 1
-                jr      z, loc_9162
+                jr      z, Round20
                 dec     hl
-                jp      loc_9148
+                jp      Round19
 ; ---------------------------------------------------------------------------
-loc_9162:
+Round20:
                 dec     hl
-loc_9163:
+Round21:
                 ld      a, b
                 sub     c
-                jr      nc, loc_9168
+                jr      nc, Round22
                 xor     a
-loc_9168:
+Round22:
                 ld      b, a
                 ld      a, c
                 add     a, b
                 rra
                 ld      e, 1
-                jr      nc, loc_9171
+                jr      nc, Round23
                 dec     e
-loc_9171:
+Round23:
                 push    de
                 cpl
                 ld      e, a
@@ -18514,13 +18525,13 @@ loc_9171:
                 pop     de
                 ld      a, e
                 and     d
-                jr      z, loc_917E
+                jr      z, Round24
                 inc     hl
-loc_917E:
+Round24:
                 ld      a, e
                 xor     d
                 ret
-; End of function sub_908D
+; End of function Round
 ; =============== S U B R O U T I N E =======================================
 ; Push BCD into the stack
 BCDPush:
@@ -18882,7 +18893,7 @@ sub_935C:
                 call    BCDPack         ; Packs a C long string in (HL) into BCD form
                 ld      (Signal1), a
                 ld      a, (Count)
-                ld      (byte_04EE), a
+                ld      (DecPlaces1), a
                 ld      b, a
                 ex      de, hl
                 ld      c, 0Eh
@@ -18903,7 +18914,7 @@ loc_938E:
                 ld      a, 9
 loc_9395:
                 ld      c, a
-                call    sub_908D
+                call    Round           ; Round BCD in HL to MAXDG
                 call    BCDPush         ; Push BCD into the stack
                 ret
 ; End of function sub_935C
@@ -20080,7 +20091,7 @@ StrToNum:
                 pop     ix
                 pop     af
                 ld      c, a
-                ld      b, FLTLN        ; Size of a Float (14)
+                ld      b, FLTLN        ; Size of a Float/BCD (14)
                 call    BCDPack         ; Packs a C long string in (HL) into BCD form
                 dec     de
                 ld      (de), a
@@ -21301,7 +21312,7 @@ byte_A698       db 0
 byte_A699       db 0
 byte_A69A       db 0
                 db 0
-byte_A69C       db 0
+Auto            db 0
 BreakFL         db 0                    ; 1=On Break
 byte_A69E       db 0
 byte_A69F       db 0
@@ -21319,7 +21330,7 @@ Stack:
 ; Generates the random seed
 RandomSeed:
                 ld      hl, lbcdRandom
-                ld      c, FLTLN        ; Size of a Float (14)
+                ld      c, FLTLN        ; Size of a Float/BCD (14)
                 call    IbcdHL          ; Increments by 1 the C bytes long BCD in (HL)
                 ld      l, ConSt        ; BIOS call 3
                 call    BIOScall
