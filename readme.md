@@ -7,4 +7,4 @@ This project was blessed by Professor Richard "Dick" Walters, original author of
 
 There may be someone else out there who would also like to have this on their collection, so here it is.
 
-This is dedicated to the memory of Professor Emeritus Richard F. Walters
+This project is dedicated to the memory of Professor Emeritus Richard F. Walters
